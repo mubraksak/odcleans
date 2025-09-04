@@ -15,11 +15,12 @@ interface AdditionalService {
 }
 
 interface Quote {
+  //pets: string
   id: number
   propertyType: string
   bedrooms: number
   bathrooms: number
-  cleaningType: string
+  cleaning_type: string
   status: string
   total_price?: number
   desired_date: string
@@ -31,6 +32,9 @@ interface Quote {
   admin_notes?: string
   additional_service_types?: string
   additional_services?: AdditionalService[] | string // Can be array or string (for parsing)
+  square_footage: string
+  cleaning_frequency: string
+  has_pets: string
 }
 
 interface QuoteCardProps {
@@ -97,6 +101,18 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
         return "Post-Construction"
       default:
         return type
+    }
+  }
+
+  const hasPets = (has_pets: string) =>{
+    switch(has_pets){
+       case "0":
+        return "yes"
+      case "1":
+        return "no"
+      default : 
+        return has_pets
+
     }
   }
 
@@ -172,6 +188,8 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
     }
   }
 
+   
+
   return (
     <Card className="border-border/50">
       <CardHeader>
@@ -179,7 +197,7 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
           <div>
             <CardTitle className="text-lg text-primary">Quote #{quote.id.toString().padStart(6, "0")}</CardTitle>
             <CardDescription>
-              <h1>{getCleaningTypeDisplay(quote.cleaningType)} • {quote.propertyType === "home" ? "🏠 Home" : "🏢 Office"}</h1>
+              <h1 className="text-lg font-bold text-dark"> service Type :{getCleaningTypeDisplay(quote.cleaning_type)} for {quote.propertyType === "Residencial" ? "🏠 Residencial" : "🏢 Commercial"}  Building</h1>
             </CardDescription>
           </div>
           <Badge className={getStatusColor(quote.status)}>
@@ -192,13 +210,36 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
         {/* Quote Details */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Bedrooms</p>
+            <p className="text-muted-foreground">Rooms</p>
             <p className="font-semibold">{quote.bedrooms}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Bathrooms</p>
             <p className="font-semibold">{quote.bathrooms}</p>
           </div>
+
+
+          <div>
+            <p className="text-muted-foreground">Square Meters</p>
+            <p className="font-semibold">{quote.square_footage}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Cleaning Type</p>
+            <p className="font-semibold">{quote.cleaning_type} cleaning</p>
+          </div>
+
+
+          
+          <div>
+            <p className="text-muted-foreground">Frequent Cleaning </p>
+            <p className="font-semibold">{quote.cleaning_frequency}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Pets</p>
+          <h1 className="text-lg font-bold text-dark">  {quote.has_pets == "1" ? "🐱 YES" : "🐶 NO"} </h1>
+            {/* <p className="font-semibold">{quote.has_pets} </p> */}
+          </div>
+          
           <div>
             <p className="text-muted-foreground">Desired Date</p>
             <p className="font-semibold">{new Date(quote.desired_date).toLocaleDateString()}</p>
@@ -214,7 +255,7 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
         {/* Additional Services */}
         {additionalServices.length > 0 && (
           <div className="bg-accent/5 p-4 rounded-lg border border-accent/20">
-            <p className="text-sm text-muted-foreground mb-2">Additional Services</p>
+            <h3 className="text-lg font-bold  mb-2 text-accent">Additional Services</h3>
             <div className="space-y-1">
               {additionalServices.map((service, index) => (
                 <div key={index} className="flex justify-between items-center">

@@ -10,12 +10,12 @@ import Link from "next/link"
 interface Quote {
   id: number
   propertyType: string
-  rooms: number
+  bedrooms: number
   bathrooms: number
   cleaningType: string
   status: string
   proposedPrice?: number
-  desired_date?: string
+  desired_date: string
   specialInstructions?: string
   created_at: string
   bookingId?: number
