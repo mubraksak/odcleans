@@ -35,6 +35,7 @@ interface Quote {
   square_footage: string
   cleaning_frequency: string
   has_pets: string
+  base_price: number
 }
 
 interface QuoteCardProps {
@@ -251,6 +252,21 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
             </div>
           )}
         </div>
+
+
+        {/* pricing Section */}
+     
+          <div className="bg-accent/5 p-4 rounded-lg border border-accent/20">
+            <h3 className="text-lg font-bold  mb-2 text-accent">Pricing</h3>
+            <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">{getServiceTypeDisplay(quote.cleaning_type)}</span>
+                  <span className="text-sm font-semibold">${quote.base_price}</span>
+                </div>
+            </div>
+          </div>
+       
+
 
         {/* Additional Services */}
         {additionalServices.length > 0 && (

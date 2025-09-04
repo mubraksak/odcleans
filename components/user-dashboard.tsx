@@ -22,6 +22,12 @@ interface Quote {
   scheduledDate?: string
   bookingStatus?: string
   adminNote: string
+  cleaning_type: string 
+  square_footage: string
+  cleaning_frequency: string
+  has_pets: string
+  base_price: string
+
 }
 
 export function UserDashboard() {

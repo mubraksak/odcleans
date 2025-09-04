@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const quoteId = resolvedParams.id
     const updates = await request.json()
 
-    const { status, total_price, admin_notes } = updates
+    const { status, base_price, total_price, admin_notes } = updates
 
     // Build update query dynamically
     const updateFields: string[] = []
@@ -48,6 +48,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (total_price !== undefined) {
       updateFields.push("total_price = ?")
       updateValues.push(total_price)
+    }
+
+    if (total_price !== undefined) {
+      updateFields.push("base_price = ?")
+      updateValues.push(base_price)
     }
 
     if (admin_notes !== undefined) {

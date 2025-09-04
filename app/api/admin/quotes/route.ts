@@ -17,14 +17,24 @@ export async function GET(request: NextRequest) {
       params.push(status)
     }
 
-    // Get quotes with user information
+    // Get quotes with user information and additional services
     const quotesQuery = `
-      SELECT qr.*, u.name as user_name, u.email as user_email, u.phone as user_phone,
-             b.id as booking_id, b.scheduled_date, b.status as booking_status
+      SELECT 
+        qr.*, 
+        u.name as user_name, 
+        u.email as user_email, 
+        u.phone as user_phone,
+        b.id as booking_id, 
+        b.scheduled_date, 
+        b.status as booking_status,
+        GROUP_CONCAT(CONCAT(qas.service_type, ':', COALESCE(asp.base_price, 0)) SEPARATOR ';') as additional_services
       FROM quote_requests qr
       JOIN users u ON qr.user_id = u.id
       LEFT JOIN bookings b ON qr.id = b.quote_request_id
+      LEFT JOIN quote_additional_services qas ON qr.id = qas.quote_id
+      LEFT JOIN additional_service_pricing asp ON qas.service_type = asp.service_type AND asp.is_active = TRUE
       ${whereClause}
+      GROUP BY qr.id, u.id, b.id
       ORDER BY qr.created_at DESC
       LIMIT ? OFFSET ?
     `
