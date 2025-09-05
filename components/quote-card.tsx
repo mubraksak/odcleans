@@ -15,6 +15,7 @@ interface AdditionalService {
 }
 
 interface Quote {
+ 
   //pets: string
   id: number
   propertyType: string
@@ -35,12 +36,13 @@ interface Quote {
   square_footage: string
   cleaning_frequency: string
   has_pets: string
-  base_price: number
+   base_price: number
 }
 
 interface QuoteCardProps {
   quote: Quote
   onUpdate: () => void
+  onEdit?: (quote: Quote) => void // Add this prop for edit functionality
 }
 
 export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
@@ -129,14 +131,20 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
     return serviceNames[serviceType] || serviceType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
-  const handleAccept = async () => {
-    if (!scheduledDate) {
+ const handleAccept = async () => {
+    if (!scheduledDate && showScheduling) {
+      alert("Please select a date and time for your cleaning")
+      return
+    }
+
+     if (!scheduledDate) {
       setShowScheduling(true)
       return
     }
 
     setIsLoading(true)
     try {
+      console.log("Accepting quote:", quote.id, "with date:", scheduledDate)
       const response = await fetch(`/api/user/quotes/${quote.id}`, {
         method: "PATCH",
         headers: {
@@ -144,14 +152,18 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
         },
         body: JSON.stringify({
           action: "accept",
-          scheduledDate,
+          scheduledDate: scheduledDate,
         }),
       })
+
+      const responseData = await response.json()
+      console.log("Accept response:", response.status, responseData)
+
 
       if (response.ok) {
         onUpdate()
       } else {
-        alert("Failed to accept quote")
+        alert(`Failed to accept quote ${responseData.error || 'unknown'}`)
       }
     } catch (error) {
       alert("An error occurred")
@@ -167,6 +179,7 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
 
     setIsLoading(true)
     try {
+       console.log("Declining quote:", quote.id)
       const response = await fetch(`/api/user/quotes/${quote.id}`, {
         method: "PATCH",
         headers: {
@@ -176,23 +189,30 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
           action: "decline",
         }),
       })
-
+      const responseData = await response.json()
+      console.log("Decline response:", response.status, responseData)
       if (response.ok) {
         onUpdate()
       } else {
-        alert("Failed to decline quote")
+        alert(`Failed to decline quote: ${responseData.error || 'Unknown error'}`)
       }
     } catch (error) {
+      console.error("Decline error:", error)
       alert("An error occurred")
     } finally {
       setIsLoading(false)
     }
   }
 
-   
+   const handleEdit = () => {
+    if (onEdit) {
+      onEdit(quote)
+    }
+  }
+
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 relative">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -325,7 +345,7 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
 
         {/* Actions */}
         {quote.status === "quoted" && (
-          <>
+            <>
             <Separator />
             <div className="space-y-4">
               {showScheduling && (
@@ -346,11 +366,11 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={handleAccept}
                   disabled={isLoading}
-                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
+                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground min-w-[120px]"
                 >
                   {isLoading ? "Processing..." : showScheduling ? "Confirm Booking" : "Accept Quote"}
                 </Button>
@@ -358,9 +378,17 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
                   onClick={handleDecline}
                   disabled={isLoading}
                   variant="outline"
-                  className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground bg-transparent"
+                  className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground min-w-[120px]"
                 >
-                  Decline
+                  {isLoading ? "Processing..." : "Decline"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleEdit}
+                  disabled={isLoading}
+                  className="min-w-[100px]"
+                >
+                  Edit Quote
                 </Button>
               </div>
             </div>

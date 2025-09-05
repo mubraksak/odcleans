@@ -41,6 +41,7 @@ interface Quote {
   has_pets?: boolean
   additional_service_types?: string
   additional_services?: AdditionalService[] | string
+  suggested_price?: string
 }
 
 export function QuotesTable() {
@@ -367,6 +368,13 @@ export function QuotesTable() {
                     <span className="text-2xl font-bold text-accent">${calculateTotalPrice()}</span>
                   </div>
                 </div>
+                 <div className="border-t pt-4">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-lg">Suggested Price</Label>
+                    <span className="text-2xl font-bold text-accent">{selectedQuote.suggested_price}</span>
+                  </div>
+                </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="adminNotes">Admin Notes</Label>

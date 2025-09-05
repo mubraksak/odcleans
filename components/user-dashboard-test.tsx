@@ -50,7 +50,6 @@ export function UserDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
 
- const [existingServices, setExistingServices] = useState<AdditionalService[]>([])
   
   const fetchQuotes = async () => {
     try {
@@ -66,50 +65,26 @@ export function UserDashboard() {
     }
   }
 
-  
-  // Function to fetch quote details with additional services
-  const fetchQuoteDetails = async (quoteId: number) => {
-    try {
-      const response = await fetch(`/api/user/quotes/${quoteId}`)
-      if (response.ok) {
-        const data = await response.json()
-        return data.quote
-      }
-    } catch (error) {
-      console.error("Error fetching quote details:", error)
-    }
-    return null
-  }
-
   useEffect(() => {
     fetchQuotes()
   }, [])
 
   useEffect(() => {
     if (editingQuote) {
-      // Fetch the full quote details including additional services
-      fetchQuoteDetails(editingQuote.id).then(quoteDetails => {
-        if (quoteDetails) {
-          setSuggestedPrice(quoteDetails.total_price?.toString() || "")
-          setUserNotes(quoteDetails.specialInstructions || "")
-          
-          // Set existing services
-          setExistingServices(quoteDetails.additional_services || [])
-          
-          // Initialize checkboxes based on existing services
-          const initialServices: { [key: string]: boolean } = {}
-          if (quoteDetails.additional_services) {
-            quoteDetails.additional_services.forEach((service: AdditionalService) => {
-              initialServices[service.service_type] = true
-            })
-          }
-          setAdditionalServices(initialServices)
-        }
-      })
+      setSuggestedPrice(editingQuote.total_price?.toString() || "")
+      setUserNotes(editingQuote.specialInstructions || "")
+      
+      // Initialize additional services checkboxes
+      const initialServices: { [key: string]: boolean } = {}
+      if (editingQuote.additional_services) {
+        const services = parseAdditionalServices(editingQuote.additional_services)
+        services.forEach(service => {
+          initialServices[service.service_type] = true
+        })
+      }
+      setAdditionalServices(initialServices)
     }
   }, [editingQuote])
-
-
 
   const parseAdditionalServices = (services: any): AdditionalService[] => {
     if (Array.isArray(services)) return services
@@ -127,16 +102,16 @@ export function UserDashboard() {
   }
 
   const getServicePrice = (serviceType: string): number => {
-  const servicePrices: { [key: string]: number } = {
-    laundry: 25,
-    folding_clothes: 15,
-    fridge_cleaning: 35,
-    baseboard_cleaning: 20,
-    cabinet_cleaning: 30,
-    window_cleaning: 40
+    const servicePrices: { [key: string]: number } = {
+      laundry: 25,
+      folding_clothes: 15,
+      fridge_cleaning: 35,
+      baseboard_cleaning: 20,
+      cabinet_cleaning: 30,
+      window_cleaning: 40
+    }
+    return servicePrices[serviceType] || 0
   }
-  return servicePrices[serviceType] || 0
-}
 
   const getServiceName = (serviceType: string): string => {
     const serviceNames: { [key: string]: string } = {
@@ -149,16 +124,16 @@ export function UserDashboard() {
     }
     return serviceNames[serviceType] || serviceType.replace('_', ' ')
   }
-// Calculate total price based on base price + selected services
+
   const calculateTotalPrice = () => {
-    const base = Number(editingQuote?.base_price) || 0
+    const base = editingQuote?.base_price || 0
     const additional = Object.entries(additionalServices).reduce((total, [serviceType, isSelected]) => {
       if (isSelected) {
-        return total + Number(getServicePrice(serviceType))
+        return total + getServicePrice(serviceType)
       }
       return total
     }, 0)
-    return additional + base
+    return base + additional
   }
 
   const handleServiceToggle = (serviceType: string, checked: boolean) => {
@@ -175,17 +150,15 @@ export function UserDashboard() {
         .map(([serviceType]) => `${serviceType}:${getServicePrice(serviceType)}`)
         .join(',')
 
-      const newTotalPrice = parseFloat(suggestedPrice) || calculateTotalPrice()
-
       const response = await fetch(`/api/user/quotes/${editingQuote.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "counter_offer",
-          suggested_price: parseFloat(suggestedPrice) || newTotalPrice,
+          suggested_price: parseFloat(suggestedPrice) || calculateTotalPrice(),
           user_notes: userNotes,
           additional_services: selectedServices,
-          new_total_price: newTotalPrice // Send the new calculated total price
+          
         }),
       })
 
@@ -195,7 +168,6 @@ export function UserDashboard() {
         setSuggestedPrice("")
         setUserNotes("")
         setAdditionalServices({})
-        setExistingServices([])
       }
     } catch (error) {
       console.error("Error updating quote:", error)
@@ -333,95 +305,94 @@ export function UserDashboard() {
 
       {/* Edit Quote Modal */}
       <Dialog open={!!editingQuote} onOpenChange={() => setEditingQuote(null)}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-    <DialogHeader>
-      <DialogTitle>Edit Quote #{editingQuote?.id.toString().padStart(6, "0")}</DialogTitle>
-      <DialogDescription>
-        Suggest changes to your cleaning service quote
-      </DialogDescription>
-    </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Quote #{editingQuote?.id.toString().padStart(6, "0")}</DialogTitle>
+            <DialogDescription>
+              Suggest changes to your cleaning service quote
+            </DialogDescription>
+          </DialogHeader>
 
-    {editingQuote && (
-      <div className="space-y-6">
-        {/* Original Quote Details */}
-        <div className="bg-muted p-4 rounded-lg">
-          <h3 className="font-semibold mb-2">Original Quote</h3>
-          <p>Base Price: ${editingQuote.base_price}</p>
-          <p>Total: ${editingQuote.total_price}</p>
-          {existingServices.length > 0 && (
-            <div className="mt-2">
-              <p className="font-medium">Current Services:</p>
-              {existingServices.map((service, index) => (
-                <p key={index} className="text-sm">
-                  - {getServiceName(service.service_type)}: ${service.price}
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Suggested Price */}
-        <div className="space-y-2">
-          <Label htmlFor="suggestedPrice">Your Suggested Total Price ($)</Label>
-          <Input
-            id="suggestedPrice"
-            type="number"
-            value={suggestedPrice}
-            onChange={(e) => setSuggestedPrice(e.target.value)}
-            placeholder="Enter your suggested total price"
-          />
-          <p className="text-sm text-muted-foreground">
-            Original total: ${editingQuote.total_price}
-          </p>
-        </div>
-
-        {/* Additional Services */}
-        <div className="space-y-2">
-          <Label>Adjust Additional Services</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries({
-              laundry: "Laundry (+$25)",
-              folding_clothes: "Folding Clothes (+$15)",
-              fridge_cleaning: "Fridge Cleaning (+$35)",
-              baseboard_cleaning: "Baseboard Cleaning (+$20)",
-              cabinet_cleaning: "Cabinet Cleaning (+$30)",
-              window_cleaning: "Window Cleaning (+$40)"
-            }).map(([serviceType, label]) => (
-              <div key={serviceType} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={additionalServices[serviceType] || false}
-                  onCheckedChange={(checked) => handleServiceToggle(serviceType, checked as boolean)}
-                />
-                <Label className="text-sm">{label}</Label>
+          {editingQuote && (
+            <div className="space-y-6">
+              {/* Original Quote Details */}
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Original Quote</h3>
+                <p>Base Price: ${editingQuote.base_price}</p>
+                <p>Total: ${editingQuote.total_price}</p>
+                {editingQuote.additional_services && (
+                  <div className="mt-2">
+                    <p className="font-medium">Services included:</p>
+                    {parseAdditionalServices(editingQuote.additional_services).map(service => (
+                      <p key={service.service_type} className="text-sm">
+                        - {getServiceName(service.service_type)}: ${service.price}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Real-time Calculation */}
-        <div className="bg-accent/5 p-4 rounded-lg">
-          <h4 className="font-semibold mb-2">Price Calculation</h4>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>Base Cleaning:</span>
-              <span>${editingQuote.base_price}</span>
-            </div>
-            {Object.entries(additionalServices)
-              .filter(([_, isSelected]) => isSelected)
-              .map(([serviceType]) => (
-                <div key={serviceType} className="flex justify-between">
-                  <span>{getServiceName(serviceType)}:</span>
-                  <span>+${getServicePrice(serviceType)}</span>
+              {/* Suggested Price */}
+              <div className="space-y-2">
+                <Label htmlFor="suggestedPrice">Your Suggested Price ($)</Label>
+                <Input
+                  id="suggestedPrice"
+                  type="number"
+                  value={suggestedPrice}
+                  onChange={(e) => setSuggestedPrice(e.target.value)}
+                  placeholder="Enter your suggested price"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Original total: ${editingQuote.total_price}
+                </p>
+              </div>
+
+              {/* Additional Services */}
+              <div className="space-y-2">
+                <Label>Adjust Services</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries({
+                    laundry: "Laundry (+$25)",
+                    folding_clothes: "Folding Clothes (+$15)",
+                    fridge_cleaning: "Fridge Cleaning (+$35)",
+                    baseboard_cleaning: "Baseboard Cleaning (+$20)",
+                    cabinet_cleaning: "Cabinet Cleaning (+$30)",
+                    window_cleaning: "Window Cleaning (+$40)"
+                  }).map(([serviceType, label]) => (
+                    <div key={serviceType} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={additionalServices[serviceType] || false}
+                        onCheckedChange={(checked) => handleServiceToggle(serviceType, checked as boolean)}
+                      />
+                      <Label className="text-sm">{label}</Label>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            <div className="border-t pt-1 mt-1 flex justify-between font-semibold">
-              <span>Calculated Total:</span>
-              <span>${calculateTotalPrice()}</span>
-            </div>
-          </div>
-        </div>
+              </div>
 
-       {/* Actions */}
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="userNotes">Notes to Admin</Label>
+                <Textarea
+                  id="userNotes"
+                  value={userNotes}
+                  onChange={(e) => setUserNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Explain your suggested changes..."
+                />
+              </div>
+
+              {/* New Total */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-lg">Your Suggested Total</Label>
+                  <span className="text-2xl font-bold text-accent">
+                    ${suggestedPrice || calculateTotalPrice()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
@@ -438,11 +409,10 @@ export function UserDashboard() {
                   {isSubmitting ? "Submitting..." : "Submit Changes"}
                 </Button>
               </div>
-        {/* ... (rest of your modal) */}
-      </div>
-    )}
-  </DialogContent>
-</Dialog>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
