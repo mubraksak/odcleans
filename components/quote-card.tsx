@@ -45,7 +45,7 @@ interface QuoteCardProps {
   onEdit?: (quote: Quote) => void // Add this prop for edit functionality
 }
 
-export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
+export function QuoteCard({ quote, onUpdate, onEdit }: QuoteCardProps) {
   const [isAccepting, setIsAccepting] = useState(false)
   const [scheduledDate, setScheduledDate] = useState("")
   const [showScheduling, setShowScheduling] = useState(false)

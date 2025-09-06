@@ -82,10 +82,10 @@ export async function PATCH(
   await query("UPDATE quote_requests SET status = 'accepted' WHERE id = ?", [quoteId]);
 
   // Check if booking already exists
-  const existingBookings = await query(
+  const existingBookings = (await query(
     "SELECT id FROM bookings WHERE quote_request_id = ?",
     [quoteId]
-  );
+  )) as any[];
 
   // If booking exists, delete it
   if (existingBookings.length > 0) {

@@ -53,8 +53,8 @@ export default function HomePage() {
   const fallbackData: LandingData = {
     siteConfig: {
       id: 1,
-      heroTitle: "Premium Cleaning Services for Your Home & Office",
-      heroSubtitle:
+      hero_title: "Premium Cleaning Services for Your Home & Office",
+      hero_subtitle:
         "Experience the difference with Od Cleaning Services. Professional, reliable, and thorough cleaning solutions tailored to your needs.",
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -103,31 +103,35 @@ export default function HomePage() {
       {
         id: 1,
         clientName: "Sarah Johnson",
-        quote:
-          "Od Cleaning Services transformed my home! Their attention to detail is incredible and the team is so professional.",
+        quote: "Od Cleaning Services transformed my home! Their attention to detail is incredible and the team is so professional.",
         displayOrder: 1,
+         image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        rating: 0
       },
       {
         id: 2,
         clientName: "Michael Chen",
         quote: "Best cleaning service in the city. They consistently deliver exceptional results for our office space.",
         displayOrder: 2,
+         image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        rating: 0
       },
       {
         id: 3,
         clientName: "Emily Rodriguez",
-        quote:
-          "I trust Od Cleaning with my home completely. They are reliable, thorough, and always exceed expectations.",
+        quote: "I trust Od Cleaning with my home completely. They are reliable, thorough, and always exceed expectations.",
         displayOrder: 3,
+        image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        rating: 0
       },
     ],
   }
@@ -138,7 +142,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <HeroSection title={displayData.siteConfig.heroTitle} subtitle={displayData.siteConfig.heroSubtitle} />
+        <HeroSection title={displayData.siteConfig.hero_title} subtitle={displayData.siteConfig.hero_subtitle} />
         <ServicesSection services={displayData.services} />
         <div id="testimonials">
           <TestimonialsSection testimonials={displayData.testimonials} />

@@ -12,7 +12,7 @@ type Testimonial = {
   clientName: string; // not string | undefined
   quote : string;
   id : any;
-  imageUrl: string;
+  image_url: string;
   // other fields
 }
 export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) {
@@ -45,7 +45,7 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
                 <div className="flex items-center gap-4">
                   <Avatar className="w-12 h-12">
                     <AvatarImage
-                      src={testimonial.imageUrl || `/placeholder.svg?height=48&width=48&query=professional headshot`}
+                      src={testimonial.image_url || `/placeholder.svg?height=48&width=48&query=professional headshot`}
                       alt={testimonial.clientName}
                     />
                     <AvatarFallback className="bg-accent text-accent-foreground font-semibold">

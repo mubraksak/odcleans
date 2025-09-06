@@ -7,8 +7,8 @@ export async function GET() {
     // Fetch site configuration
     const siteConfigResult = (await query("SELECT * FROM site_config ORDER BY id DESC LIMIT 1")) as SiteConfig[]
     const siteConfig = siteConfigResult[0] || {
-      heroTitle: "Premium Cleaning Services for Your Home & Office",
-      heroSubtitle:
+      hero_title: "Premium Cleaning Services for Your Home & Office",
+      hero_subtitle:
         "Experience the difference with Od Cleaning Services. Professional, reliable, and thorough cleaning solutions tailored to your needs.",
     }
 
