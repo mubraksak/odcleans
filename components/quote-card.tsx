@@ -131,46 +131,41 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
     return serviceNames[serviceType] || serviceType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
- const handleAccept = async () => {
-    if (!scheduledDate && showScheduling) {
-      alert("Please select a date and time for your cleaning")
-      return
-    }
+const handleAccept = async () => {
+  if (!confirm("Are you sure you want to accept this quote?")) {
+    return
+  }
 
-     if (!scheduledDate) {
-      setShowScheduling(true)
-      return
-    }
+    //  if (!scheduledDate) {
+    //   setShowScheduling(true)
+    //   return
+    // }
 
     setIsLoading(true)
-    try {
-      console.log("Accepting quote:", quote.id, "with date:", scheduledDate)
-      const response = await fetch(`/api/user/quotes/${quote.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "accept",
-          scheduledDate: scheduledDate,
-        }),
-      })
+  try {
+    const response = await fetch(`/api/user/quotes/${quote.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "accept",
+      }),
+    })
 
-      const responseData = await response.json()
-      console.log("Accept response:", response.status, responseData)
-
-
-      if (response.ok) {
-        onUpdate()
-      } else {
-        alert(`Failed to accept quote ${responseData.error || 'unknown'}`)
-      }
-    } catch (error) {
-      alert("An error occurred")
-    } finally {
-      setIsLoading(false)
+    if (response.ok) {
+      onUpdate()
+      alert("Quote accepted successfully! You can now schedule the cleaning.")
+    } else {
+      alert("Failed to accept quote. Please try again.")
     }
+  } catch (error) {
+    console.error("Accept error:", error)
+    alert("An error occurred while accepting the quote")
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleDecline = async () => {
     if (!confirm("Are you sure you want to decline this quote?")) {
@@ -345,55 +340,37 @@ export function QuoteCard({ quote, onUpdate }: QuoteCardProps) {
 
         {/* Actions */}
         {quote.status === "quoted" && (
-            <>
-            <Separator />
-            <div className="space-y-4">
-              {showScheduling && (
-                <div className="space-y-3">
-                  <Label htmlFor="scheduledDate">Select Cleaning Date & Time</Label>
-                  <Input
-                    id="scheduledDate"
-                    type="datetime-local"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                  <Alert>
-                    <AlertDescription>
-                      By scheduling this cleaning, you agree to our terms of service and cancellation policy.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  onClick={handleAccept}
-                  disabled={isLoading}
-                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground min-w-[120px]"
-                >
-                  {isLoading ? "Processing..." : showScheduling ? "Confirm Booking" : "Accept Quote"}
-                </Button>
-                <Button
-                  onClick={handleDecline}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground min-w-[120px]"
-                >
-                  {isLoading ? "Processing..." : "Decline"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleEdit}
-                  disabled={isLoading}
-                  className="min-w-[100px]"
-                >
-                  Edit Quote
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
+  <>
+    <Separator />
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          onClick={handleAccept}
+          disabled={isLoading}
+          className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground min-w-[120px]"
+        >
+          {isLoading ? "Processing..." : "Accept Quote"}
+        </Button>
+        <Button
+          onClick={handleDecline}
+          disabled={isLoading}
+          variant="outline"
+          className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground min-w-[120px]"
+        >
+          {isLoading ? "Processing..." : "Decline"}
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={handleEdit}
+          disabled={isLoading}
+          className="min-w-[100px]"
+        >
+          Edit Quote
+        </Button>
+      </div>
+    </div>
+  </>
+)}
 
         <div className="text-xs text-muted-foreground">
           Requested on {new Date(quote.created_at).toLocaleDateString()}

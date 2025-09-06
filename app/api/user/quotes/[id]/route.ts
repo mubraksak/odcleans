@@ -32,7 +32,7 @@ export async function GET(
     )) as any[]
 
     const quote = quotes[0]
-    
+
     return NextResponse.json({
       quote: {
         ...quote,
@@ -51,7 +51,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-     console.log("PATCH request received")
+    console.log("PATCH request received")
     const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -77,11 +77,41 @@ export async function PATCH(
 
     const quote = quotes[0]
 
-    if (action === "accept") {
-      const validStatus = "completed"
-    } else if (action === "decline") {
-     const validStatus = "rejected"
+  if (action === "accept") {
+  // Update the quote status
+  await query("UPDATE quote_requests SET status = 'accepted' WHERE id = ?", [quoteId]);
+
+  // Check if booking already exists
+  const existingBookings = await query(
+    "SELECT id FROM bookings WHERE quote_request_id = ?",
+    [quoteId]
+  );
+
+  // If booking exists, delete it
+  if (existingBookings.length > 0) {
+    await query(
+      "DELETE FROM bookings WHERE quote_request_id = ?",
+      [quoteId]
+    );
+  }
+
+  // Create new booking record
+  await query(
+    "INSERT INTO bookings (quote_request_id, status) VALUES (?, 'pending_schedule')",
+    [quoteId]
+  );
+
+  return NextResponse.json({
+    success: true,
+    message: "Quote accepted successfully"
+  });
+}else if (action === "decline") {
+      // Update quote status to declined
+      await query("UPDATE quote_requests SET status = 'declined' WHERE id = ?", [quoteId])
+
+      return NextResponse.json({ success: true, message: "Quote declined" })
     } else if (action === "counter_offer") {
+      
       const validStatus = "quoted"
 
       // await query("START TRANSACTION")

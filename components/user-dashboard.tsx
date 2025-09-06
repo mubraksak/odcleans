@@ -206,7 +206,7 @@ export function UserDashboard() {
 
   const activeQuotes = quotes.filter((q) => q.status === "quoted")
   const pendingQuotes = quotes.filter((q) => q.status === "pending")
-  const completedQuotes = quotes.filter((q) => ["accepted", "declined", "completed", "counter_offer"].includes(q.status))
+  const completedQuotes = quotes.filter((q) => ["accepted", "declined", "Scheduled","completed", "counter_offer"].includes(q.status))
 
   if (loading) {
     return (

@@ -27,6 +27,9 @@ interface Quote {
   bathrooms: number
   square_footage?: number
   desired_date?: string
+  desired_date1?: string
+  desired_date2?: string
+  desired_date3?: string
   special_instructions: string
   status: string
   proposed_price?: number
@@ -49,9 +52,15 @@ export function QuotesTable() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null)
+  const [schedulingQuote, setSchedulingQuote] = useState<Quote | null>(null)
+  const [quoteToSchedule, setQuoteToSchedule] = useState<Quote | null>(null) // New state for scheduling
   const [basePrice, setBasePrice] = useState("")
   const [adminNotes, setAdminNotes] = useState("")
   const [additionalServices, setAdditionalServices] = useState<{ [key: string]: boolean }>({})
+  const [schedulingModalOpen, setSchedulingModalOpen] = useState(false);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState("");
+  const [selectedScheduleTime, setSelectedScheduleTime] = useState("");
+  const [isScheduling, setIsScheduling] = useState(false)
 
   const fetchQuotes = async () => {
     try {
@@ -76,7 +85,6 @@ export function QuotesTable() {
       setBasePrice(selectedQuote.base_price?.toString() || selectedQuote.proposed_price?.toString() || "")
       setAdminNotes(selectedQuote.admin_notes || "")
       
-      // Initialize additional services checkboxes
       const initialServices: { [key: string]: boolean } = {}
       if (selectedQuote.additional_services) {
         const services = Array.isArray(selectedQuote.additional_services) 
@@ -125,7 +133,6 @@ export function QuotesTable() {
     const base = parseFloat(basePrice) || 0
     const additional = Object.entries(additionalServices).reduce((total, [serviceType, isSelected]) => {
       if (isSelected) {
-        // You might want to fetch actual service prices from your database
         const servicePrice = getServicePrice(serviceType)
         return total + servicePrice
       }
@@ -182,9 +189,6 @@ export function QuotesTable() {
       if (response.ok) {
         await fetchQuotes()
         setSelectedQuote(null)
-        setBasePrice("")
-        setAdminNotes("")
-        setAdditionalServices({})
       }
     } catch (error) {
       console.error("Error updating quote:", error)
@@ -209,6 +213,66 @@ export function QuotesTable() {
     } catch (error) {
       console.error("Error saving notes:", error)
     }
+  }
+
+  const handleAcceptQuote = async () => {
+    if (!selectedQuote) return
+
+    try {
+      const response = await fetch(`/api/admin/quotes/${selectedQuote.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "accepted",
+          admin_notes: adminNotes,
+        }),
+      })
+
+      if (response.ok) {
+        // Open scheduling modal after successful acceptance
+        setSchedulingQuote(selectedQuote)
+        setSelectedQuote(null)
+        await fetchQuotes()
+      }
+    } catch (error) {
+      console.error("Error accepting quote:", error)
+    }
+  }
+
+const handleScheduleBooking = async () => {
+  if (!quoteToSchedule || !selectedScheduleDate || !selectedScheduleTime) return;
+
+  try {
+    const response = await fetch(`/api/admin/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        quote_id: quoteToSchedule.id,
+        scheduled_date: `${selectedScheduleDate}T${selectedScheduleTime}`,
+        status: "scheduled"
+      }),
+    });
+
+    if (response.ok) {
+      // Refresh quotes and close modal
+      await fetchQuotes();
+      setQuoteToSchedule(null);
+      setSelectedScheduleDate("");
+      setSelectedScheduleTime("");
+    }
+  } catch (error) {
+    console.error("Error scheduling booking:", error);
+  }
+};
+
+  // Get available date options from the quote
+  const getDateOptions = (quote: Quote) => {
+    const options = []
+    if (quote.desired_date1) options.push(quote.desired_date1)
+    if (quote.desired_date2) options.push(quote.desired_date2)
+    if (quote.desired_date3) options.push(quote.desired_date3)
+    if (quote.desired_date) options.push(quote.desired_date)
+    return options.filter(Boolean)
   }
 
   if (loading) {
@@ -274,9 +338,21 @@ export function QuotesTable() {
                     <TableCell>{quote.total_price ? `$${quote.total_price}` : "Not set"}</TableCell>
                     <TableCell>{new Date(quote.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
+                      <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => setSelectedQuote(quote)}>
                         View Details
                       </Button>
+                            {quote.status === "accepted" && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setQuoteToSchedule(quote)}
+              className="bg-green-100 text-green-800 hover:bg-green-200"
+            >
+              Schedule Date
+            </Button>
+          )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -292,6 +368,7 @@ export function QuotesTable() {
         </CardContent>
       </Card>
 
+      {/* Quote Details Dialog */}
       <Dialog open={!!selectedQuote} onOpenChange={() => setSelectedQuote(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -368,13 +445,15 @@ export function QuotesTable() {
                     <span className="text-2xl font-bold text-accent">${calculateTotalPrice()}</span>
                   </div>
                 </div>
-                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-lg">Suggested Price</Label>
-                    <span className="text-2xl font-bold text-accent">{selectedQuote.suggested_price}</span>
-                  </div>
-                </div>
 
+                {selectedQuote.suggested_price && (
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-lg">Suggested Price</Label>
+                      <span className="text-2xl font-bold text-accent">${selectedQuote.suggested_price}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="adminNotes">Admin Notes</Label>
@@ -391,6 +470,11 @@ export function QuotesTable() {
                   <Button onClick={handleSaveNotes} variant="outline" className="flex-1">
                     Save Notes
                   </Button>
+                  {selectedQuote.status === "quoted" && (
+                    <Button onClick={handleAcceptQuote} className="flex-1 bg-green-600 hover:bg-green-700">
+                      Accept Quote
+                    </Button>
+                  )}
                   <Button onClick={handleSubmitQuote} className="flex-1 bg-accent">
                     Submit Quote
                   </Button>
@@ -400,6 +484,75 @@ export function QuotesTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Scheduling Modal */}
+<Dialog open={!!quoteToSchedule} onOpenChange={() => setQuoteToSchedule(null)}>
+  <DialogContent className="max-w-md">
+    <DialogHeader>
+      <DialogTitle>Schedule Booking for Quote #{quoteToSchedule?.id.toString().padStart(6, "0")}</DialogTitle>
+      <DialogDescription>
+        Customer: {quoteToSchedule?.user_name}
+      </DialogDescription>
+    </DialogHeader>
+
+    {quoteToSchedule && (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Available Dates</Label>
+          <Select onValueChange={setSelectedScheduleDate}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a date" />
+            </SelectTrigger>
+            <SelectContent>
+              {quoteToSchedule.desired_date1 && (
+                <SelectItem value={quoteToSchedule.desired_date1}>
+                  {new Date(quoteToSchedule.desired_date1).toLocaleDateString()}
+                </SelectItem>
+              )}
+              {quoteToSchedule.desired_date2 && (
+                <SelectItem value={quoteToSchedule.desired_date2}>
+                  {new Date(quoteToSchedule.desired_date2).toLocaleDateString()}
+                </SelectItem>
+              )}
+              {quoteToSchedule.desired_date3 && (
+                <SelectItem value={quoteToSchedule.desired_date3}>
+                  {new Date(quoteToSchedule.desired_date3).toLocaleDateString()}
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Select Time</Label>
+          <Select onValueChange={setSelectedScheduleTime}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="09:00">9:00 AM</SelectItem>
+              <SelectItem value="10:00">10:00 AM</SelectItem>
+              <SelectItem value="11:00">11:00 AM</SelectItem>
+              <SelectItem value="12:00">12:00 PM</SelectItem>
+              <SelectItem value="13:00">1:00 PM</SelectItem>
+              <SelectItem value="14:00">2:00 PM</SelectItem>
+              <SelectItem value="15:00">3:00 PM</SelectItem>
+              <SelectItem value="16:00">4:00 PM</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button 
+          onClick={handleScheduleBooking}
+          disabled={!selectedScheduleDate || !selectedScheduleTime}
+          className="w-full"
+        >
+          Confirm Schedule
+        </Button>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
     </>
   )
 }

@@ -28,13 +28,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+// In your PATCH function in /api/admin/quotes/[id]/route.ts
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }>}) {
   try {
-     const resolvedParams = await params // Await the params promise
+    const resolvedParams = await params
     const quoteId = resolvedParams.id
     const updates = await request.json()
 
-    const { status, base_price, total_price, admin_notes } = updates
+    const { status, base_price, total_price, admin_notes, additional_services } = updates
 
     // Build update query dynamically
     const updateFields: string[] = []
@@ -50,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       updateValues.push(total_price)
     }
 
-    if (total_price !== undefined) {
+    if (base_price !== undefined) {
       updateFields.push("base_price = ?")
       updateValues.push(base_price)
     }
@@ -59,6 +60,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       updateFields.push("admin_notes = ?")
       updateValues.push(admin_notes)
     }
+
+    // if (additional_services !== undefined) {
+    //   updateFields.push("additional_services = ?")
+    //   updateValues.push(additional_services)
+    // }
 
     if (updateFields.length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 })
@@ -70,13 +76,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const updateQuery = `UPDATE quote_requests SET ${updateFields.join(", ")} WHERE id = ?`
     await query(updateQuery, updateValues)
 
-    // If status changed to "quoted", you would trigger an email here
-    if (status === "quoted") {
-      // TODO: Send email notification to client
-      console.log("Would send email notification for quote", quoteId)
-    }
-
-    // 
     return NextResponse.json({ success: true, message: "Quote updated successfully" })
   } catch (error) {
     console.error("Error updating quote:", error)

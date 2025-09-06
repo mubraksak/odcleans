@@ -173,7 +173,7 @@ export function ScheduleCalendar() {
                             {event.extendedProps.user.name} • {event.extendedProps.user.phone}
                           </p>
                           <p>
-                            {event.extendedProps.quote.rooms} rooms • ${event.extendedProps.quote.proposed_price}
+                            {event.extendedProps.quote.bedrooms} rooms • ${event.extendedProps.quote.total_price}
                           </p>
                         </div>
                       </div>
