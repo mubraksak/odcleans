@@ -24,7 +24,9 @@ interface Quote {
   cleaningType: string
   status: string
   proposedPrice?: number
-  desired_date: string
+  desired_date1: string
+  desired_date2: string
+  desired_date3: string
   specialInstructions?: string
   created_at: string
   bookingId?: number
@@ -38,6 +40,7 @@ interface Quote {
   base_price: number
   total_price?: number
   additional_services?: AdditionalService[] | string
+  scheduled_date: any
 }
 
 export function UserDashboard() {
@@ -206,7 +209,7 @@ export function UserDashboard() {
 
   const activeQuotes = quotes.filter((q) => q.status === "quoted")
   const pendingQuotes = quotes.filter((q) => q.status === "pending")
-  const completedQuotes = quotes.filter((q) => ["accepted", "declined", "Scheduled","completed", "counter_offer"].includes(q.status))
+  const completedQuotes = quotes.filter((q) => ["accepted", "declined", "scheduled","completed", "counter_offer"].includes(q.status))
 
   if (loading) {
     return (

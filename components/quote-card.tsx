@@ -15,6 +15,7 @@ interface AdditionalService {
 }
 
 interface Quote {
+  
  
   //pets: string
   id: number
@@ -24,11 +25,13 @@ interface Quote {
   cleaning_type: string
   status: string
   total_price?: number
-  desired_date: string
+  desired_date1: string | number | Date
+  desired_date3: string | number | Date
+  desired_date2: string | number | Date
   special_instructions?: string
   created_at: string
   bookingId?: number
-  scheduledDate?: string
+  scheduled_date: string | number | Date
   bookingStatus?: string
   admin_notes?: string
   additional_service_types?: string
@@ -255,19 +258,80 @@ const handleAccept = async () => {
           <h1 className="text-lg font-bold text-dark">  {quote.has_pets == "1" ? "🐱 YES" : "🐶 NO"} </h1>
             {/* <p className="font-semibold">{quote.has_pets} </p> */}
           </div>
-          
-          <div>
-            <p className="text-muted-foreground">Desired Date</p>
-            <p className="font-semibold">{new Date(quote.desired_date).toLocaleDateString()}</p>
-          </div>
-          {quote.desired_date && (
-            <div>
-              <p className="text-muted-foreground">Desired Time</p>
-              <p className="font-semibold">{new Date(quote.desired_date).toLocaleTimeString()}</p>
-            </div>
-          )}
-        </div>
 
+
+          {/* DESIRED DATE SECTION */}
+<div className="space-y-4">
+  {quote.status === 'scheduled' && quote?.scheduled_date ? (
+    // Show scheduled date and time when status is scheduled
+    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+        <p className="text-green-800 font-semibold text-sm">Scheduled Service</p>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-green-600 text-sm">Scheduled Date</p>
+          <p className="font-semibold text-green-800">
+            {new Date(quote.scheduled_date).toLocaleDateString()}
+          </p>
+        </div>
+        <div>
+          <p className="text-green-600 text-sm">Scheduled Time</p>
+          <p className="font-semibold text-green-800">
+            {new Date(quote.scheduled_date).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : (
+    // Show desired dates when not scheduled
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <p className="text-muted-foreground text-sm">Desired Date 1</p>
+          <p className="font-semibold">
+            {quote.desired_date1 ? new Date(quote.desired_date1).toLocaleDateString() : 'Not specified'}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-sm">Desired Date 2</p>
+          <p className="font-semibold">
+            {quote.desired_date2 ? new Date(quote.desired_date2).toLocaleDateString() : 'Not specified'}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-sm">Desired Date 3</p>
+          <p className="font-semibold">
+            {quote.desired_date3 ? new Date(quote.desired_date3).toLocaleDateString() : 'Not specified'}
+          </p>
+        </div>
+      </div>
+      
+      {quote.desired_date1 && (
+        <div>
+          <p className="text-muted-foreground text-sm">Desired Time</p>
+          <p className="font-semibold">
+            {new Date(quote.desired_date1).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+        </div>
+      )}
+    </>
+  )}
+</div>
+
+
+        </div>
+        {/* DESIRED DATE SECTION  */}
+
+
+        
 
         {/* pricing Section */}
      
@@ -327,7 +391,7 @@ const handleAccept = async () => {
               <div>
                 <p className="text-muted-foreground">Scheduled Date</p>
                 <p className="font-semibold">
-                  {quote.scheduledDate ? new Date(quote.scheduledDate).toLocaleString() : "Not scheduled"}
+                  {quote.scheduled_date ? new Date(quote.scheduled_date).toLocaleString() : "Not scheduled"}
                 </p>
               </div>
               <div>
@@ -359,14 +423,7 @@ const handleAccept = async () => {
         >
           {isLoading ? "Processing..." : "Decline"}
         </Button>
-        <Button 
-          variant="outline" 
-          onClick={handleEdit}
-          disabled={isLoading}
-          className="min-w-[100px]"
-        >
-          Edit Quote
-        </Button>
+       
       </div>
     </div>
   </>

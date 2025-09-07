@@ -29,6 +29,16 @@ const navigation = [
     icon: "📅",
   },
   {
+    name: "Service-managemet",
+    href: "/admin/service-management",
+    icon: "🧹",
+  },
+  {
+    name: "Aditional Services",
+    href: "/admin/aditional-services",
+    icon: "🧼",
+  },
+  {
     name: "CMS",
     href: "/admin/cms",
     icon: "✏️",

@@ -30,10 +30,21 @@ export interface Service {
   updatedAt?: Date
 }
 
-export interface Testimonial {
+export interface AdditionalService {
   id?: number
+  service_id: number
+  description: string
+  price: number
+  unit: string // e.g., "per hour", "per room", "flat rate"
+  is_optional: boolean
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface Testimonial {
+  id: number
   clientName: string
-  image_url?: string
+  image_url: string
   rating: number
   quote: string
   serviceType?: string

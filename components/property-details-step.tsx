@@ -166,7 +166,7 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
               <SelectItem key={type.value} value={type.value}>
                 <div className="flex flex-col">
                   <span className="font-medium">{type.label}</span>
-                  <span className="text-sm text-muted-foreground">{type.price}</span>
+                  {/* <span className="text-sm text-muted-foreground">{type.price}</span> */}
                 </div>
               </SelectItem>
             ))}
@@ -217,16 +217,47 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
       {/* Desired Date */}
       <div className="space-y-2">
         <Label htmlFor="desiredDate" className="text-base font-semibold text-primary">
-          Preferred Date
+          Preferred Date 1
         </Label>
         <Input
-          id="desiredDate"
+          id="desiredDate1"
           type="date"
-          value={formData.desiredDate}
-          onChange={(e) => updateFormData({ desiredDate: e.target.value })}
+          value={formData.desiredDate1}
+          onChange={(e) => updateFormData({ desiredDate1: e.target.value })}
           min={new Date().toISOString().split("T")[0]}
         />
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="desiredDate" className="text-base font-semibold text-primary">
+          Preferred Date 2
+        </Label>
+        <Input
+          id="desiredDate2"
+          type="date"
+          value={formData.desiredDate2}
+          onChange={(e) => updateFormData({ desiredDate2: e.target.value })}
+          min={new Date().toISOString().split("T")[0]}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="desiredDate" className="text-base font-semibold text-primary">
+          Preferred Date 3
+        </Label>
+        <Input
+          id="desiredDate3"
+          type="date"
+          value={formData.desiredDate3}
+          onChange={(e) => updateFormData({ desiredDate3: e.target.value })}
+          min={new Date().toISOString().split("T")[0]}
+        />
+      </div>
+
+
+
+
+
 
       {/* Next Button */}
       <div className="flex justify-end pt-4">

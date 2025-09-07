@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import type { Service } from "@/lib/types"
 import Image from "next/image"
+import Link from "next/link"
+
 
 interface ServicesSectionProps {
   services: Service[]
@@ -44,7 +46,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
           {services.map((service) => (
             <Card
               key={service.id}
-              className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 overflow-hidden bg-white p-0"
+              className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 overflow-hidden bg-white p-0 pb-5"
             >
               {/* Full-width image at the top - from database */}
               {service.image_url ? (
@@ -63,7 +65,7 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                   />
                   {/* Overlay gradient for better text readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  
+
                   {/* Service icon overlay */}
                   <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full p-2">
                     <span className="text-2xl">
@@ -90,23 +92,31 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                   {service.name}
                 </CardTitle>
               </CardHeader>
-              
+
               <CardContent>
-                <CardDescription className="text-center text-muted-foreground leading-relaxed mb-4">
+                <CardDescription className="text-lg text-center text-muted-foreground leading-relaxed mb-4">
                   {service.description}
                 </CardDescription>
-                <div>
-                    <ul>
-                      <li>Office Cleaning </li>
-                      <li>Retail Store Cleaning </li>
-                      <li>Medical Facility Cleaning </li>
-                      <li>Restaurant Cleaning </li>
-                      <li>Warehouse Cleaning </li>
-                      <li>Janitorial Services</li>
-                      
-                    </ul>
+                <div className="bg-background border-l- border-accent pl-4 py-4">
+                  <ul className="space-y-3">
+                    {[
+                      "Office Cleaning",
+                      "Retail Store Cleaning",
+                      "Medical Facility Cleaning",
+                      "Restaurant Cleaning",
+                      "Warehouse Cleaning",
+                      "Janitorial Services"
+                    ].map((service, index) => (
+                      <li key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-accent/10 transition-all group">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-circle-check-big w-5 h-5 text-secondary flex-shrink-0"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+                        <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+                          {service}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                
+
                 {/* Additional service details */}
                 {(service.priceRange || service.duration) && (
                   <div className="flex justify-center gap-4 text-sm text-muted-foreground mt-4">
@@ -130,12 +140,15 @@ export function ServicesSection({ services }: ServicesSectionProps) {
         {/* CTA */}
         <div className="text-center mt-16">
           <p className="text-muted-foreground mb-4">Need a custom cleaning solution?</p>
-          <Badge
-            variant="outline"
-            className="border-accent text-accent hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors px-4 py-2 text-sm"
-          >
-            Contact us for a personalized quote
-          </Badge>
+          <Link href="/quote">
+            <Badge
+              variant="outline"
+              className="border-accent text-accent hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors px-4 py-2 text-sm"
+            >
+              Contact us for a personalized quote
+            </Badge>
+          </Link>
+
         </div>
       </div>
     </section>

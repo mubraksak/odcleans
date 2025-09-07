@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
       cleaningType,
       cleaningFrequency,
       hasPets,
-      desiredDate,
+      desiredDate1,
+      desiredDate2,
+      desiredDate3,
       
       // Additional Services
       laundry,
@@ -86,10 +88,10 @@ export async function POST(request: NextRequest) {
     const quoteResult = (await query(
       `INSERT INTO quote_requests 
        (user_id, service_type, property_type, bedrooms, bathrooms, square_footage, 
-        cleaning_type, cleaning_frequency, has_pets, desired_date,
+        cleaning_type, cleaning_frequency, has_pets, desired_date1, desired_date2, desired_date3,
         contact_name, contact_email, contact_phone, street_address, city, state, zip_code,
         special_instructions, additional_details, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, 'pending')`,
       [
         userId,
         serviceType,
@@ -100,7 +102,9 @@ export async function POST(request: NextRequest) {
         cleaningType,
         cleaningFrequency || null,
         hasPets === 'yes' ? true : false,
-        desiredDate || null,
+        desiredDate1 || null,
+        desiredDate2 || null,
+        desiredDate3 || null,
         name,
         email,
         phone,

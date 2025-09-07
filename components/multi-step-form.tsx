@@ -10,6 +10,7 @@ import { QuoteSummaryStep } from "./quote-summary-step"
 import { SuccessStep } from "./success-step"
 
 export interface QuoteFormData {
+
   // Step 1: Property Details
   /* NEW DATA */
   serviceType: string
@@ -20,7 +21,9 @@ export interface QuoteFormData {
   cleaningType: string
   cleaningFrequency: string
   hasPets: string
-  desiredDate: string
+  desiredDate1: string | number | readonly string[] | undefined
+  desiredDate2: string | number | readonly string[] | undefined
+  desiredDate3: string | number | readonly string[] | undefined
 
 
   // Additional Services
@@ -56,7 +59,9 @@ const initialFormData: QuoteFormData = {
   cleaningType: "",
   cleaningFrequency: "",
   hasPets: "",
-  desiredDate: "",
+  desiredDate1: "",
+  desiredDate2: "",
+  desiredDate3: "",
 
  // Additional Services
   laundry: false,
