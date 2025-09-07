@@ -44,11 +44,11 @@ export function ServicesSection({ services }: ServicesSectionProps) {
           {services.map((service) => (
             <Card
               key={service.id}
-              className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 overflow-hidden"
+              className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 overflow-hidden bg-white p-0"
             >
               {/* Full-width image at the top - from database */}
               {service.image_url ? (
-                <div className="relative  w-full h-48 overflow-hidden">
+                <div className="relative w-full h-50  overflow-hidden">
                   <Image
                     src={service.image_url}
                     alt={service.name}
@@ -95,6 +95,17 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                 <CardDescription className="text-center text-muted-foreground leading-relaxed mb-4">
                   {service.description}
                 </CardDescription>
+                <div>
+                    <ul>
+                      <li>Office Cleaning </li>
+                      <li>Retail Store Cleaning </li>
+                      <li>Medical Facility Cleaning </li>
+                      <li>Restaurant Cleaning </li>
+                      <li>Warehouse Cleaning </li>
+                      <li>Janitorial Services</li>
+                      
+                    </ul>
+                </div>
                 
                 {/* Additional service details */}
                 {(service.priceRange || service.duration) && (
