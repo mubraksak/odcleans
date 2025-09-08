@@ -32,6 +32,7 @@ export interface Service {
 
 export interface AdditionalService {
   id?: number
+  name: string
   service_id: number
   description: string
   price: number
@@ -41,6 +42,16 @@ export interface AdditionalService {
   updatedAt?: Date
 }
 
+
+
+export interface AdditionalServiceWithService extends AdditionalService {
+  service_title: string
+  service_type: string
+  name: string
+  base_price: number
+  // For backward compatibility, in case some parts of the codebase still use service_title
+  // service_title?: string
+}
 export interface Testimonial {
   id: number
   clientName: string

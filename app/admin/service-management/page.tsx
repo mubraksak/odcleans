@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Plus, Edit, Trash2, Eye, EyeOff, ImageIcon } from "lucide-react"
 import type { Service } from "@/lib/types"
+import { AdminSidebar } from "@/components/admin-sidebar"
 
 export default function ServicesManagementPage() {
   const [services, setServices] = useState<Service[]>([])
@@ -184,7 +185,10 @@ export default function ServicesManagementPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+   <div className="flex h-screen bg-background">
+     <AdminSidebar />
+     <main className="flex-1 overflow-auto">
+      <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Services Management</h1>
@@ -396,6 +400,9 @@ export default function ServicesManagementPage() {
           <p>No services found. Add your first service to get started.</p>
         </div>
       )}
+   </div> 
+    </main>
+
     </div>
   )
 }

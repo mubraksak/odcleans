@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     console.log(name, description, image_url, displayOrder, isActive)
     const result = await query(
       `INSERT INTO services (name, description, image_url, display_order, is_active)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?)`,
       [name, description, image_url || null, displayOrder || 0, isActive || 1]
     ) as { insertId?: number }
 

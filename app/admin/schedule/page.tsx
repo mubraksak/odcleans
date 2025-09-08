@@ -14,7 +14,7 @@ export default async function AdminSchedulePage() {
   return (
     <div className="flex h-screen bg-background">
       <AdminSidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto ">
         <div className="p-6">
           <div className="mb-6">
             <h1 className="font-serif font-bold text-3xl text-primary">Cleaning Schedule</h1>
