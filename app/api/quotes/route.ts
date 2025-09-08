@@ -190,7 +190,7 @@ async function calculateQuotePrice(quoteId: number): Promise<number> {
     const additionalServices = (await query(
       `SELECT SUM(asp.base_price) as total
        FROM quote_additional_services qas
-       JOIN additional_service_pricing asp ON qas.service_type = asp.service_type AND asp.is_active = 1
+       JOIN additional_service_pricing asp ON qas.name = asp.name AND asp.is_active = 1
        WHERE qas.quote_id = ?`,
       [quoteId]
     )) as any[];
