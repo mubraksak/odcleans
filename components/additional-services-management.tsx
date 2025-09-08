@@ -141,7 +141,7 @@ export function AdditionalServicesManagement({ services }: AdditionalServicesMan
   const handleEdit = (service: AdditionalServiceWithService) => {
     setEditingService(service)
     setFormData({
-      name: service.name,
+      name: service.service_title,
       service_id: service.service_id.toString(),
       description: service.description,
       base_price: service.base_price.toString(),

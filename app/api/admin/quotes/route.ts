@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       JOIN users u ON qr.user_id = u.id
       LEFT JOIN bookings b ON qr.id = b.quote_request_id
       LEFT JOIN quote_additional_services qas ON qr.id = qas.quote_id
-      LEFT JOIN additional_service_pricing asp ON qas.service_type = asp.service_type AND asp.is_active = TRUE
+      LEFT JOIN additional_service_pricing asp ON qas.service_type = asp.name AND asp.is_active = TRUE
       ${whereClause}
       GROUP BY qr.id, u.id, b.id
       ORDER BY qr.created_at DESC

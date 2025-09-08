@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/database"
+import { AdditionalService } from "@/lib/types";
+import { QuoteFormData } from "@/components/multi-step-form";
 
 export async function GET(
   request: Request,
@@ -94,5 +96,24 @@ export async function DELETE(
       { success: false, error: "Failed to delete additional service" }, 
       { status: 500 }
     )
+  }
+}
+
+export async function getAdditionalServices(): Promise<AdditionalService[]> {
+  try {
+    const services = await query(`
+      SELECT id, field, label, description 
+      FROM additional_services 
+      WHERE is_active = TRUE 
+      ORDER BY label
+    `) as any[];
+    
+    return services.map(service => ({
+      ...service,
+      field: service.field as keyof QuoteFormData
+    }));
+  } catch (error) {
+    console.error('Error fetching additional services:', error);
+    throw new Error('Failed to fetch additional services');
   }
 }

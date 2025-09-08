@@ -33,6 +33,7 @@ export interface QuoteFormData {
   baseboardCleaning: boolean
   cabinetCleaning: boolean
   windowCleaning: boolean
+  additionalServices: Record<string, boolean>
   additionalDetails: string
 
 
@@ -49,6 +50,7 @@ export interface QuoteFormData {
   specialInstructions: string
 }
 
+// Initial form data
 const initialFormData: QuoteFormData = {
   // Step 1: Property Details
   serviceType: "",
@@ -70,6 +72,7 @@ const initialFormData: QuoteFormData = {
   baseboardCleaning: false,
   cabinetCleaning: false,
   windowCleaning: false,
+  additionalServices: {},
   additionalDetails: "",
 
   // Contact Details

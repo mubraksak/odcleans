@@ -20,15 +20,15 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
   const serviceTypes = [
     { value: "residential", label: "Residential Cleaning" },
     { value: "commercial", label: "Commercial Cleaning" },
-    { value: "deep", label: "Deep Cleaning" },
-    { value: "post_construction", label: "Post-Construction" },
-    { value: "move_in_out", label: "Move-in/Move-out" }
+    // { value: "deep", label: "Deep Cleaning" },
+    // { value: "post_construction", label: "Post-Construction" },
+    // { value: "move_in_out", label: "Move-in/Move-out" }
   ]
 
   const propertyTypes = [
     { value: "house", label: "House" },
     { value: "apartment", label: "Apartment" },
-    { value: "condo", label: "Condo" },
+    // { value: "condo", label: "Condo" },
     { value: "office", label: "Office" },
     { value: "retail", label: "Retail Store" },
     { value: "other", label: "Other" }
@@ -37,7 +37,7 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
   const cleaningTypes = [
     { value: "standard", label: "Standard Cleaning", price: "Starting at $80" },
     { value: "deep", label: "Deep Cleaning", price: "Starting at $150" },
-    { value: "post_construction", label: "Post-Construction", price: "Starting at $200" }
+ // { value: "post_construction", label: "Post-Construction", price: "Starting at $200" }
   ]
 
   const frequencyOptions = [
@@ -110,7 +110,7 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
             <SelectContent>
               {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => (
                 <SelectItem key={num} value={num.toString()}>
-                  {num} {num === 1 ? "Bedroom" : "rooms"}
+                  {num} {num === 1 ? "Room" : "rooms"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -127,13 +127,16 @@ export function PropertyDetailsStep({ formData, updateFormData, onNext }: Proper
               <SelectValue placeholder="Select bathrooms" />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 6 }, (_, i) => i + 1).map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  {num} {num === 1? "Bathroom" : "Bathrooms"}
-                </SelectItem>
-              ))}
+              {Array.from({ length: 10 }, (_, i) => {
+                const value = (i * 0.5) + 1;
+                return (
+                  <SelectItem key={value} value={value.toString()}>
+                    {value} {value === 1 ? "Bathroom" : "Bathrooms"}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
-          </Select>
+          </Select> 
         </div>
       </div>
 

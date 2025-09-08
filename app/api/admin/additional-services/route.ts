@@ -19,7 +19,7 @@ export async function GET() {
   try {
 
      const services = (await query(
-      "SELECT name, base_price, description FROM additional_service_pricing WHERE is_active = TRUE ORDER BY id"
+      "SELECT service_type, base_price, description FROM additional_service_pricing WHERE is_active = TRUE ORDER BY service_type"
     )) as any[]
 
 
@@ -47,12 +47,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const {name, service_id, description, base_price, unit, is_optional } = await request.json()
+    const { service_id, description, base_price, unit, is_optional } = await request.json()
 
     const result = await query(
-      `INSERT INTO additional_service_pricing (name, service_id, description, base_price, unit, is_optional)
+      `INSERT INTO additional_service_pricing (service_id, description, base_price, unit, is_optional)
        VALUES (?, ?, ?, ?, ?)`,
-      [name, service_id, description, base_price, unit, is_optional]
+      [service_id, description, base_price, unit, is_optional]
     )
 
     return NextResponse.json({ 

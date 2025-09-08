@@ -49,6 +49,7 @@ export interface AdditionalServiceWithService extends AdditionalService {
   service_type: string
   name: string
   base_price: number
+  
   // For backward compatibility, in case some parts of the codebase still use service_title
   // service_title?: string
 }
