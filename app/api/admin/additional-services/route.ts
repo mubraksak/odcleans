@@ -19,7 +19,7 @@ export async function GET() {
   try {
 
      const services = (await query(
-      "SELECT service_type, base_price, description FROM additional_service_pricing WHERE is_active = TRUE ORDER BY service_type"
+      "SELECT name, base_price, description FROM additional_service_pricing WHERE is_active = TRUE ORDER BY name ASC "
     )) as any[]
 
 

@@ -15,7 +15,7 @@ export async function GET() {
     // Total revenue (accepted quotes)
     const revenueResult = (await query(
       "SELECT SUM(total_price) as total FROM quote_requests WHERE status = 'accepted' AND total_price IS NOT NULL",
-    )) as any[]
+    )) as any[] 
 
     // Upcoming cleanings (next 7 days)
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
