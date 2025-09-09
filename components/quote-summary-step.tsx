@@ -5,15 +5,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { QuoteFormData } from "./multi-step-form"
+import { useState } from "react"
 
-interface QuoteSummaryStepProps {
-  formData: QuoteFormData
-  onSubmit: () => void
-  onPrev: () => void
-  isSubmitting: boolean
+interface QuoteSummaryStepProps { 
+  formData: QuoteFormData 
+  onSubmit: () => void 
+  onPrev: () => void 
+  isSubmitting: boolean 
 }
 
+// Helper functions to display readable text
 export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: QuoteSummaryStepProps) {
+  // State for submission error
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Submit handler
+  const handleSubmit = async () => {
+    setSubmitError(null)
+    try {
+      const response = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        // Success - call the parent onSubmit
+        onSubmit()
+      } else {
+        setSubmitError(result.error || 'Failed to submit quote request')
+      }
+    } catch (error) {
+      setSubmitError('Network error. Please try again.')
+      console.error('Submission error:', error)
+    }
+  }
+  
+  
+  // Helper functions to display readable text
   const getCleaningTypeDisplay = (type: string) => {
     switch (type) {
       case "standard":
@@ -27,6 +60,7 @@ export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: Q
     }
   }
 
+  // Property type display
   const getPropertyTypeDisplay = (type: string) => {
     return type === "home" ? "🏠 Home" : "🏢 Office"
   }
@@ -72,10 +106,16 @@ export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: Q
             </div>
           </div>
 
-          {formData.desiredDate && (
+          {formData.desiredDate1 && (
             <div>
               <p className="text-sm text-muted-foreground">Preferred Date</p>
-              <p className="font-semibold">{new Date(formData.desiredDate).toLocaleDateString()}</p>
+              <p className="font-semibold">
+                {new Date(
+                  Array.isArray(formData.desiredDate1)
+                    ? formData.desiredDate1[0]
+                    : formData.desiredDate1
+                ).toLocaleDateString()}
+              </p>
             </div>
           )}
         </CardContent>
@@ -139,7 +179,7 @@ export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: Q
             Back to Contact Details
           </Button>
           <Button
-            onClick={onSubmit}
+            onClick={handleSubmit}
             disabled={isSubmitting}
             className="bg-accent hover:bg-accent/90 text-accent-foreground px-8"
           >

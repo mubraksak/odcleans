@@ -1,10 +1,8 @@
+
+// new code 
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/database"
-
-
-// In your API route, add this function
-
-
+import { emailService } from "@/lib/email-service" // Import your email service
 
 export async function POST(request: NextRequest) {
   try {
@@ -139,13 +137,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-
     console.log("Calculating price...")
     const estimatedPrice = await calculateQuotePrice(quoteId)
     console.log("Calculated price:", estimatedPrice)
 
-    // const estimatedPrice = await calculateQuotePrice(quoteId);
-    
+    // Send email notifications (non-blocking)
+    try {
+      // Send confirmation to user
+      emailService.sendQuoteConfirmation(email, name, quoteId, "temporary-token-placeholder")
+        .catch(err => console.error("Failed to send user confirmation email:", err))
+      
+      // Send notification to admin
+      emailService.sendAdminNotification(quoteId, name, email)
+        .catch(err => console.error("Failed to send admin notification email:", err))
+    } catch (emailError) {
+      console.error("Email sending error:", emailError)
+      // Don't fail the request if emails fail
+    }
 
     return NextResponse.json({
       success: true,
@@ -162,6 +170,7 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
 
 
 // Add the calculation function
@@ -190,7 +199,7 @@ async function calculateQuotePrice(quoteId: number): Promise<number> {
     const additionalServices = (await query(
       `SELECT SUM(asp.base_price) as total
        FROM quote_additional_services qas
-       JOIN additional_service_pricing asp ON qas.name = asp.name AND asp.is_active = 1
+       JOIN additional_service_pricing asp ON qas.service_type = asp.name AND asp.is_active = 1
        WHERE qas.quote_id = ?`,
       [quoteId]
     )) as any[];
