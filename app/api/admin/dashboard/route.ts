@@ -14,13 +14,13 @@ export async function GET() {
 
     // Total revenue (accepted quotes)
     const revenueResult = (await query(
-      "SELECT SUM(total_price) as total FROM quote_requests WHERE status = 'accepted' AND total_price IS NOT NULL",
+      "SELECT SUM(total_price) as total FROM quote_requests WHERE (status ='accepted' OR status = 'scheduled') AND total_price IS NOT NULL",
     )) as any[] 
 
     // Upcoming cleanings (next 7 days)
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     const upcomingCleanings = (await query(
-      "SELECT COUNT(*) as count FROM bookings WHERE scheduled_date BETWEEN ? AND ? AND status = 'confirmed'",
+      "SELECT COUNT(*) as count FROM bookings WHERE scheduled_date BETWEEN ? AND ? AND (status = 'scheduled' OR status = 'accepted' OR status = 'in_progress' OR status = 'comfirmed')",
       [now, nextWeek],
     )) as any[]
 

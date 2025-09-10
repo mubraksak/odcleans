@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/database"
 import { getCurrentUser } from "@/lib/auth-utils"
+import { emailService } from "@/lib/email-service"
 
 // GET endpoint to fetch quote details with additional services
 export async function GET(
@@ -66,10 +67,11 @@ export async function PATCH(
     const { action, scheduledDate, suggested_price, user_notes, additional_services, new_total_price } = body
 
     // Verify quote belongs to user
-    const quotes = (await query("SELECT * FROM quote_requests WHERE id = ? AND user_id = ?", [
-      quoteId,
-      user.id,
-    ])) as any[]
+     // Verify quote belongs to user and get quote details
+    const quotes = (await query(
+      "SELECT qr.*, u.email as user_email, u.name as user_name FROM quote_requests qr JOIN users u ON qr.user_id = u.id WHERE qr.id = ? AND qr.user_id = ?", 
+      [quoteId, user.id]
+    )) as any[]
 
     if (quotes.length === 0) {
       return NextResponse.json({ error: "Quote not found" }, { status: 404 })
@@ -100,6 +102,21 @@ export async function PATCH(
     "INSERT INTO bookings (quote_request_id, status) VALUES (?, 'pending_schedule')",
     [quoteId]
   );
+
+    // Send acceptance emails (non-blocking)
+      try {
+        // Send to user
+        emailService.sendQuoteAcceptedUser(quote.customer_email, quote.customer_name, Number(quoteId), scheduledDate)
+          .catch(err => console.error("Failed to send user acceptance email:", err))
+        
+        // Send to admin
+        emailService.sendQuoteAcceptedAdmin(Number(quoteId), quote.customer_name, quote.customer_email, scheduledDate)
+          .catch(err => console.error("Failed to send admin acceptance email:", err))
+      } catch (emailError) {
+        console.error("Email sending error:", emailError)
+        // Don't fail the request if emails fail
+      }
+
 
   return NextResponse.json({
     success: true,

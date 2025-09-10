@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/database"
+import { getCurrentUser } from "@/lib/auth-utils"
+import { emailService } from "@/lib/email-service"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -75,6 +77,62 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     
     const updateQuery = `UPDATE quote_requests SET ${updateFields.join(", ")} WHERE id = ?`
     await query(updateQuery, updateValues)
+
+
+    // If quote is accepted, send acceptance emails
+    if (status === "accepted") {
+      const quote = (await query("SELECT * FROM quote_requests WHERE id = ?", [quoteId])) as any[]
+      if (quote.length > 0) {
+        try {
+          // Send to user
+          emailService.sendQuoteAcceptedUser(quote[0].contact_email, quote[0].contact_name, Number(quoteId), )
+            .catch(err => console.error("Failed to send user acceptance email:", err))
+          
+          // Send to admin
+          emailService.sendQuoteAcceptedAdmin(Number(quoteId), quote[0].contact_name, quote[0].contact_email,)
+            .catch(err => console.error("Failed to send admin acceptance email:", err))
+        } catch (emailError) {
+          console.error("Email sending error:", emailError)
+          // Don't fail the request if emails fail
+        }
+      }
+    }
+
+
+    if (status === "quoted") {
+      const quote = (await query("SELECT * FROM quote_requests WHERE id = ?", [quoteId])) as any[]
+      if (quote.length > 0) {
+        try {
+          // Send to user
+          emailService.sendQuoteCreatedUser(Number(quoteId) , quote[0].contact_name, quote[0].contact_email, total_price)
+            .catch(err => console.error("Failed to send user acceptance email:", err))
+          
+          // Send to admin
+          emailService.sendQuoteCreatedAdmin(Number(quoteId), quote[0].contact_name, quote[0].contact_email, total_price ) 
+            .catch(err => console.error("Failed to send admin acceptance email:", err))
+        } catch (emailError) {
+          console.error("Email sending error:", emailError)
+          // Don't fail the request if emails fail
+        }
+      }
+    }
+
+
+//  // Send quote creation emails (non-blocking)
+//     try {
+//       // Send to user
+//       emailService.sendQuoteCreatedUser(userEmail, userName, quoteId, price)
+//         .catch(err => console.error("Failed to send user quote email:", err))
+      
+//       // Send to admin (confirmation)
+//       emailService.sendQuoteCreatedAdmin(quoteId, userName, userEmail, price)
+//         .catch(err => console.error("Failed to send admin confirmation email:", err))
+//     } catch (emailError) {
+//       console.error("Email sending error:", emailError)
+//       // Don't fail the request if emails fail
+//     }
+
+    
 
     return NextResponse.json({ success: true, message: "Quote updated successfully" })
   } catch (error) {
