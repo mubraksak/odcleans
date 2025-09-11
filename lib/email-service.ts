@@ -378,7 +378,7 @@ async sendQuoteAcceptedUser(email: string, userName: string, quoteId: number, sc
 }
 
 // Send quote accepted notification to admin
-async sendQuoteAcceptedAdmin(quoteId: number, userName: string, userEmail: string, scheduledDate?: string) {
+async sendQuoteAcceptedAdmin(userEmail: string, userName: string,  quoteId: number, scheduledDate?: string) {
   const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
   
   const html = `

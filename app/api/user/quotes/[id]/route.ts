@@ -110,7 +110,7 @@ export async function PATCH(
           .catch(err => console.error("Failed to send user acceptance email:", err))
         
         // Send to admin
-        emailService.sendQuoteAcceptedAdmin(Number(quoteId), quote.customer_name, quote.customer_email, scheduledDate)
+        emailService.sendQuoteAcceptedAdmin(quote.customer_email, quote.customer_name, Number(quoteId), scheduledDate)
           .catch(err => console.error("Failed to send admin acceptance email:", err))
       } catch (emailError) {
         console.error("Email sending error:", emailError)

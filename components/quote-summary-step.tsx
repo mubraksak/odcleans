@@ -16,34 +16,37 @@ interface QuoteSummaryStepProps {
 
 // Helper functions to display readable text
 export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: QuoteSummaryStepProps) {
+
+
+
   // State for submission error
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  // const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Submit handler
-  const handleSubmit = async () => {
-    setSubmitError(null)
-    try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+  // const handleSubmit = async () => {
+  //   setSubmitError(null)
+  //   try {
+  //     const response = await fetch('/api/quotes', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(formData),
+  //     })
       
-      const result = await response.json()
+  //     const result = await response.json()
       
-      if (response.ok) {
-        // Success - call the parent onSubmit
-        onSubmit()
-      } else {
-        setSubmitError(result.error || 'Failed to submit quote request')
-      }
-    } catch (error) {
-      setSubmitError('Network error. Please try again.')
-      console.error('Submission error:', error)
-    }
-  }
+  //     if (response.ok) {
+  //       // Success - call the parent onSubmit
+  //       onSubmit()
+  //     } else {
+  //       setSubmitError(result.error || 'Failed to submit quote request')
+  //     }
+  //   } catch (error) {
+  //     setSubmitError('Network error. Please try again.')
+  //     console.error('Submission error:', error)
+  //   }
+  // }
   
   
   // Helper functions to display readable text
@@ -179,7 +182,7 @@ export function QuoteSummaryStep({ formData, onSubmit, onPrev, isSubmitting }: Q
             Back to Contact Details
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={onSubmit}
             disabled={isSubmitting}
             className="bg-accent hover:bg-accent/90 text-accent-foreground px-8"
           >
