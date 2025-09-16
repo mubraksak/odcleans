@@ -102,7 +102,7 @@ export default function HomePage() {
     testimonials: [
       {
         id: 1,
-        clientName: "Sarah Johnson",
+        client_name: "Sarah Johnson",
         quote: "Od Cleaning Services transformed my home! Their attention to detail is incredible and the team is so professional.",
         displayOrder: 1,
          image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",
@@ -113,7 +113,7 @@ export default function HomePage() {
       },
       {
         id: 2,
-        clientName: "Michael Chen",
+        client_name: "Michael Chen",
         quote: "Best cleaning service in the city. They consistently deliver exceptional results for our office space.",
         displayOrder: 2,
          image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",
@@ -124,7 +124,7 @@ export default function HomePage() {
       },
       {
         id: 3,
-        clientName: "Emily Rodriguez",
+        client_name: "Emily Rodriguez",
         quote: "I trust Od Cleaning with my home completely. They are reliable, thorough, and always exceed expectations.",
         displayOrder: 3,
         image_url: "https://media.istockphoto.com/id/1406197730/photo/portrait-of-a-young-handsome-indian-man.jpg?s=1024x1024&w=is&k=20&c=VruKKTu4jBF2xPEEQUMWwd4bwJPysSsqLuZ7h1OyD8M=",

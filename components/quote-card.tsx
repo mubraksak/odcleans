@@ -261,7 +261,7 @@ const handleAccept = async () => {
 
 
           {/* DESIRED DATE SECTION */}
-<div className="space-y-4">
+<div className="space-y-6 p-0 bg-accent/5 rounded-lg border border-accent/20 col-span-2">
   {quote.status === 'scheduled' && quote?.scheduled_date ? (
     // Show scheduled date and time when status is scheduled
     <div className="bg-green-50 border border-green-200 rounded-lg p-4">

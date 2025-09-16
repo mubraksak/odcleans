@@ -55,7 +55,7 @@ export interface AdditionalServiceWithService extends AdditionalService {
 }
 export interface Testimonial {
   id: number
-  clientName: string
+  client_name: string
   image_url: string
   rating: number
   quote: string
