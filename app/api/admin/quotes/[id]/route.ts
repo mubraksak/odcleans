@@ -89,7 +89,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             .catch(err => console.error("Failed to send user acceptance email:", err))
           
           // Send to admin
-          emailService.sendQuoteAcceptedAdmin(Number(quoteId), quote[0].contact_name, quote[0].contact_email,)
+          emailService.sendQuoteAcceptedAdmin( quote[0].contact_email, quote[0].contact_name, Number(quoteId), )
             .catch(err => console.error("Failed to send admin acceptance email:", err))
         } catch (emailError) {
           console.error("Email sending error:", emailError)

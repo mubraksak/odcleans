@@ -13,7 +13,7 @@ export function Footer() {
               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                 <span className="text-accent-foreground font-bold text-lg">O</span>
               </div>
-              <span className="font-serif font-bold text-xl">Od Cleaning Services</span>
+              <span className="font-serif font-bold text-xl">OD Cleaning Services</span>
             </div>
             <p className="text-primary-foreground/80 mb-4 max-w-md">
               Professional cleaning services for homes and offices. We're committed to providing exceptional service
@@ -63,9 +63,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-lg mb-4">Contact</h3>
             <ul className="space-y-2 text-primary-foreground/80">
-              <li>📞 (555) 123-4567</li>
-              <li>📧 info@odcleaning.com</li>
-              <li>📍 Your City, State</li>
+              <li>📞 (832) 616-6706</li>
+              <li>📧 info@odcleanservices.com</li>
+              <li>📍 Office Houston, TX</li>
               <li>
                 <Link href="/quote" className="text-accent hover:text-accent/80 transition-colors">
                   Get a Quote
@@ -77,13 +77,16 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-primary-foreground/60 text-sm">© 2024 Od Cleaning Services. All rights reserved.</p>
+          <p className="text-primary-foreground/60 text-sm">© 2025 OD Cleaning Services. All rights reserved.</p>
           <div className="flex gap-6 text-sm text-primary-foreground/60">
-            <Link href="#" className="hover:text-accent transition-colors">
+            <Link href="/privacy-policy" className="hover:text-accent transition-colors">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:text-accent transition-colors">
+            <Link href="/terms-and-conditions" className="hover:text-accent transition-colors">
               Terms of Service
+            </Link>
+            <Link href="/faq" className="hover:text-accent transition-colors">
+              FAQ
             </Link>
             <Link href="#" className="hover:text-accent transition-colors">
               Contact

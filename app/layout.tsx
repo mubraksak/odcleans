@@ -4,9 +4,9 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'OD cleans services',
-  description: 'Your best cleaning services',
-  generator: 'halimak E solutions.',
+  title: 'OD Cleans Services',
+  description: 'Your Best Cleaning Services',
+  generator: 'Halimak E Solutions.',
 }
 
 export default function RootLayout({

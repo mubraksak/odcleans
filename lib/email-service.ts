@@ -23,7 +23,7 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
+      secure: true, // true for 465, false for other ports
       auth: {
         user: smtpUser,
         pass: smtpPassword,
@@ -33,7 +33,9 @@ class EmailService {
         rejectUnauthorized: false
       },
       logger: true,
-      debug: process.env.NODE_ENV === 'development',
+      debug: process.env.NODE_ENV === 'production', 
+      // include SMTP traffic in the logs in production
+
     })
   }
 
@@ -378,7 +380,7 @@ async sendQuoteAcceptedUser(email: string, userName: string, quoteId: number, sc
 }
 
 // Send quote accepted notification to admin
-async sendQuoteAcceptedAdmin(quoteId: number, userName: string, userEmail: string, scheduledDate?: string) {
+async sendQuoteAcceptedAdmin(userEmail: string, userName: string,  quoteId: number, scheduledDate?: string) {
   const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
   
   const html = `
