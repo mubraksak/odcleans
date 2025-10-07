@@ -227,7 +227,7 @@ export function ScheduleCalendar() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Price:</span>
-                      <p className="font-medium">${selectedEvent.extendedProps.quote.proposed_price}</p>
+                      <p className="font-medium">${selectedEvent.extendedProps.quote.total_price}</p>
                     </div>
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export function ScheduleCalendar() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Address:</span>
-                      <p className="font-medium">{selectedEvent.extendedProps.user.address}</p>
+                      <p className="font-medium">{selectedEvent.extendedProps.user.address + ' ' + selectedEvent.extendedProps.user.city + ' ' + selectedEvent.extendedProps.user.ad_state + ' ' + selectedEvent.extendedProps.user.zip}</p>
                     </div>
                   </div>
                 </div>

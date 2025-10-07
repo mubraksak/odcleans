@@ -16,6 +16,7 @@ interface AdditionalService {
   price: number
 }
 
+
 interface Quote {
   id: number
   propertyType: string
@@ -41,6 +42,8 @@ interface Quote {
   total_price?: number
   additional_services?: AdditionalService[] | string
   scheduled_date: any
+  customer_email: string
+  customer_name: string
 }
 
 export function UserDashboard() {

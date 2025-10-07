@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Get bookings with quote and user details
     const bookings = (await query(
       `SELECT b.*, qr.cleaning_type, qr.property_type, qr.bedrooms, qr.total_price,
-              u.name as user_name, u.email as user_email, u.phone as user_phone, qr.street_address as user_address
+              u.name as user_name, u.email as user_email, u.phone as user_phone, qr.street_address as user_address, qr.city as user_city, qr.state as user_state ,qr.zip_code as user_zip
        FROM bookings b
        JOIN quote_requests qr ON b.quote_request_id = qr.id
        JOIN users u ON qr.user_id = u.id
@@ -42,6 +42,10 @@ export async function GET(request: NextRequest) {
           email: booking.user_email,
           phone: booking.user_phone,
           address: booking.user_address,
+          ad_state: booking.user_state, 
+          zip: booking.user_zip, 
+          d_state: booking.user_state, 
+          city: booking.user_city
         },
         quote: {
           cleaningType: booking.cleaning_type,

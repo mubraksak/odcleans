@@ -102,6 +102,15 @@ export default function AdminLoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+          {/* // In your admin login page, add this after the login form */}
+          <div className="text-center mt-4">
+            <a
+              href="/admin/reset-password"
+              className="text-sm text-primary hover:underline"
+            >
+              Forgot your password?
+            </a>
+          </div>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>Demo credentials:</p>

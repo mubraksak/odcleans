@@ -84,7 +84,7 @@ class EmailService {
 
   // Send quote confirmation email with link
   async sendQuoteConfirmation(email: string, userName: string, quoteId: number, token: string) {
-    const quoteLink = `${process.env.NEXTAUTH_URL}/quote/${quoteId}?token=${token}`
+    const quoteLink = `${process.env.NEXTAUTH_URL}/dashboard`
     
     const html = `
       <!DOCTYPE html>
@@ -128,9 +128,9 @@ class EmailService {
     })
   }
 
-  // Send password reset email
+  //Send password reset email
   async sendPasswordReset(email: string, userName: string, resetToken: string) {
-    const resetLink = `${process.env.NEXTAUTH_URL}/admin/reset-password?token=${resetToken}`
+    const resetLink = `${resetToken}`
     
     const html = `
       <!DOCTYPE html>
@@ -139,9 +139,9 @@ class EmailService {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #ef4444; color: white; padding: 20px; text-align: center; }
+          .header { background: #10b981; color: white; padding: 20px; text-align: center; }
           .content { background: #f9fafb; padding: 30px; }
-          .button { background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+          .button { background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
           .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
         </style>
       </head>
@@ -176,7 +176,7 @@ class EmailService {
 
   // Send admin notification email
   async sendAdminNotification(quoteId: number, userName: string, userEmail: string) {
-    const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
+    const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes`
     
     const html = `
       <!DOCTYPE html>
@@ -229,7 +229,6 @@ class EmailService {
     }
     return false
   }
-
 
 // Send magic link login email
   async sendMagicLink(email: string, userName: string, token: string, redirectTo?: string) {
@@ -381,7 +380,7 @@ async sendQuoteAcceptedUser(email: string, userName: string, quoteId: number, sc
 
 // Send quote accepted notification to admin
 async sendQuoteAcceptedAdmin(userEmail: string, userName: string,  quoteId: number, scheduledDate?: string) {
-  const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
+  const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes`
   
   const html = `
     <!DOCTYPE html>
@@ -517,7 +516,7 @@ async sendBookingScheduledAdmin(quoteId: number, userName: string, userEmail: st
     day: 'numeric'
   })
   
-  const adminLink = `${process.env.NEXTAUTH_URL}/admin/bookings`
+  const adminLink = `${process.env.NEXTAUTH_URL}/admin/schedule`
   
   const html = `
     <!DOCTYPE html>
@@ -581,7 +580,7 @@ async sendBookingScheduledAdmin(quoteId: number, userName: string, userEmail: st
 
 // Send quote created notification to user
 async sendQuoteCreatedUser(quoteId: number, userName: string, userEmail: string,  price: number) {
-  const quoteLink = `${process.env.NEXTAUTH_URL}/quote/${quoteId}`
+  const quoteLink = `${process.env.NEXTAUTH_URL}/dashboard`
   
   const html = `
     <!DOCTYPE html>
@@ -638,7 +637,7 @@ async sendQuoteCreatedUser(quoteId: number, userName: string, userEmail: string,
 
 // Send quote created notification to admin (confirmation)
 async sendQuoteCreatedAdmin(quoteId: number, userName: string, userEmail: string,  price: number) {
-  const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
+  const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes`
   
   const html = `
     <!DOCTYPE html>

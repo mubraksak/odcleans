@@ -8,11 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { PaymentPopup } from "@/components/payment/payment-popup"
+import { CheckCircle } from "lucide-react"
 
 interface AdditionalService {
   service_type: string
   price: number
 }
+
+
 
 interface Quote {
   
@@ -39,7 +43,11 @@ interface Quote {
   square_footage: string
   cleaning_frequency: string
   has_pets: string
-   base_price: number
+  base_price: number
+  customer_email: string
+  customer_name: string
+
+
 }
 
 interface QuoteCardProps {
@@ -52,6 +60,8 @@ export function QuoteCard({ quote, onUpdate, onEdit }: QuoteCardProps) {
   const [isAccepting, setIsAccepting] = useState(false)
   const [scheduledDate, setScheduledDate] = useState("")
   const [showScheduling, setShowScheduling] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
+  
   const [isLoading, setIsLoading] = useState(false)
 
   // Parse additional services if they're in string format
@@ -139,6 +149,12 @@ const handleAccept = async () => {
     return
   }
 
+
+ const handlePaymentSuccess = (paymentIntentId: string) => {
+    console.log('Payment successful:', paymentIntentId)
+    // You can update the UI or refetch quotes here
+  }
+
     //  if (!scheduledDate) {
     //   setShowScheduling(true)
     //   return
@@ -209,6 +225,14 @@ const handleAccept = async () => {
   }
 
 
+  function handlePaymentSuccess(paymentIntentId: string): void {
+    // Payment was successful, update UI and refetch quotes if needed
+    setShowPayment(false)
+    alert("Payment successful! Your booking is confirmed.")
+    onUpdate()
+    // Optionally, you can log or handle the paymentIntentId for further processing
+    console.log("PaymentIntent ID:", paymentIntentId)
+  }
   return (
     <Card className="border-border/50 relative">
       <CardHeader>
@@ -428,6 +452,54 @@ const handleAccept = async () => {
     </div>
   </>
 )}
+
+{/* TODO */}
+ <>
+      <div className="border rounded-lg p-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">Quote #{quote.id}</span>
+          <span className="text-lg font-bold">${quote.total_price}</span>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          <p>Customer: {quote.customer_name}</p>
+          <p>Email: {quote.customer_email}</p>
+        </div>
+        
+        {(quote.status === 'pending' || quote.status === 'quoted') && (
+          <Button 
+            onClick={() => setShowPayment(true)}
+            className="w-full"
+            size="sm"
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Accept & Pay
+          </Button>
+        )}
+        
+        {quote.status === 'accepted' && (
+          <Badge variant="secondary">Awaiting Payment</Badge>
+        )}
+        
+        {quote.status === 'paid' && (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            Paid & Confirmed
+          </Badge>
+        )}
+      </div>
+
+      <PaymentPopup
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
+        quoteId={quote.id}
+        amount={quote.total_price ?? 110}
+        customerEmail={quote.customer_email} // Make sure this is passed
+        customerName={quote.customer_name}   // Make sure this is passed
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+    </>
+
+    {/* END TODO */}
 
         <div className="text-xs text-muted-foreground">
           Requested on {new Date(quote.created_at).toLocaleDateString()}
