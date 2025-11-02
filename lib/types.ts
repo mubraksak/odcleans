@@ -16,6 +16,13 @@ export interface SiteConfig {
   updatedAt?: Date
 }
 
+
+interface UploadedImage {
+  id: string
+  file: File
+  previewUrl: string
+}
+
 export interface Service {
   id?: number
   name: string

@@ -9,10 +9,14 @@ import { AdditionalServicesStep } from "./additional-service-step"
 import { QuoteSummaryStep } from "./quote-summary-step"
 import { SuccessStep } from "./success-step"
 
-export interface QuoteFormData {
+export interface UploadedImage {
+  id: string
+  file: File
+  previewUrl: string
+}
 
+export interface QuoteFormData {
   // Step 1: Property Details
-  /* NEW DATA */
   serviceType: string
   propertyType: string
   squareFootage: number
@@ -25,7 +29,6 @@ export interface QuoteFormData {
   desiredDate2: string | number | readonly string[] | undefined
   desiredDate3: string | number | readonly string[] | undefined
 
-
   // Additional Services
   laundry: boolean
   foldingClothes: boolean
@@ -36,8 +39,7 @@ export interface QuoteFormData {
   additionalServices: Record<string, boolean>
   additionalDetails: string
 
-
-
+  images?: UploadedImage[]
 
   // Contact Details
   name: string
@@ -65,7 +67,6 @@ const initialFormData: QuoteFormData = {
   desiredDate2: "",
   desiredDate3: "",
 
- // Additional Services
   laundry: false,
   foldingClothes: false,
   fridgeCleaning: false,
@@ -74,6 +75,7 @@ const initialFormData: QuoteFormData = {
   windowCleaning: false,
   additionalServices: {},
   additionalDetails: "",
+  images: [],
 
   // Contact Details
   name: "",
@@ -84,7 +86,6 @@ const initialFormData: QuoteFormData = {
   state: "",
   zipCode: "",
   specialInstructions: "",
-
 }
 
 export function MultiStepForm() {
@@ -114,12 +115,38 @@ export function MultiStepForm() {
   const submitQuote = async () => {
     setIsSubmitting(true)
     try {
+      const payload = new FormData()
+      const stateData = formData
+
+      // Append all form data fields
+      const formFields = [
+        'serviceType', 'propertyType', 'bedrooms', 'bathrooms', 'squareFootage',
+        'cleaningType', 'cleaningFrequency', 'hasPets', 'desiredDate1', 'desiredDate2', 'desiredDate3',
+        'laundry', 'foldingClothes', 'fridgeCleaning', 'baseboardCleaning', 'cabinetCleaning', 'windowCleaning',
+        'additionalDetails', 'name', 'email', 'phone', 'streetAddress', 'city', 'state', 'zipCode', 'specialInstructions'
+      ]
+
+      formFields.forEach(field => {
+        const value = stateData[field as keyof QuoteFormData]
+        if (value !== null && value !== undefined) {
+          payload.append(field, String(value))
+        }
+      })
+
+      // Append images if present - FIXED: Check if images exist and have files
+      if (stateData.images && stateData.images.length > 0) {
+        stateData.images.forEach((image: UploadedImage) => {
+          if (image && image.file) {
+            payload.append('images', image.file, image.file.name)
+          }
+        })
+      }
+
+      console.log('Submitting form with images:', stateData.images?.length || 0)
+
       const response = await fetch("/api/quotes", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        body: payload,
       })
 
       if (response.ok) {
@@ -127,7 +154,8 @@ export function MultiStepForm() {
         setQuoteId(result.quoteId)
         nextStep()
       } else {
-        throw new Error("Failed to submit quote")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit quote")
       }
     } catch (error) {
       console.error("Error submitting quote:", error)
@@ -142,7 +170,7 @@ export function MultiStepForm() {
       case 1:
         return "Property Details"
       case 2:
-        return "Additonal Service"
+        return "Additional Service"
       case 3:
         return "Contact Information"
       case 4:
@@ -200,8 +228,6 @@ export function MultiStepForm() {
               onPrev={prevStep}
             />
           )}
-
-
 
           {currentStep === 3 && (
             <ContactDetailsStep

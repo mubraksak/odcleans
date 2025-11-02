@@ -1,14 +1,15 @@
+// app/api/quotes/route.ts
 import { type NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/database"
-import { emailService } from "@/lib/email-service"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 import { v4 as uuidv4 } from "uuid"
 
 export async function POST(request: NextRequest) {
+
   try {
     const formData = await request.formData()
-
+    
     // Extract existing form data
     const serviceType = formData.get('serviceType') as string
     const propertyType = formData.get('propertyType') as string
@@ -42,15 +43,14 @@ export async function POST(request: NextRequest) {
     const specialInstructions = formData.get('specialInstructions') as string
 
     // Validate required fields
-    const requiredFields = [
-      'serviceType', 'propertyType', 'bedrooms', 'bathrooms', 'cleaningType',
-      'name', 'email', 'phone', 'streetAddress', 'city', 'state', 'zipCode'
-    ]
+    const requiredFields = {
+      serviceType, propertyType, bedrooms, bathrooms, cleaningType,
+      name, email, phone, streetAddress, city, state, zipCode
+    }
     
-    const missingFields = requiredFields.filter(field => {
-      const value = formData.get(field)
-      return value === null || (typeof value === 'string' && value.trim() === '')
-    })
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key)
     
     if (missingFields.length > 0) {
       return NextResponse.json(
@@ -59,11 +59,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log the data that will be processed
-    console.log("Processing quote for:", { name, email, phone })
-    console.log("Property details:", { serviceType, propertyType, bedrooms, bathrooms })
-
-    // Check if user exists, create if not
+    // Process user and quote creation (same as before)
     let userId: number
     const existingUsers = (await query(
       "SELECT id FROM users WHERE email = ?", 
@@ -72,13 +68,11 @@ export async function POST(request: NextRequest) {
 
     if (existingUsers.length > 0) {
       userId = existingUsers[0].id
-      // Update user info
       await query(
         "UPDATE users SET name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         [name, phone, userId]
       )
     } else {
-      // Create new user
       const userResult = (await query(
         "INSERT INTO users (email, name, phone) VALUES (?, ?, ?)",
         [email, name, phone]
@@ -100,13 +94,13 @@ export async function POST(request: NextRequest) {
         propertyType,
         bedrooms,
         bathrooms,
-        squareFootage || null,
+        squareFootage,
         cleaningType,
-        cleaningFrequency || null,
+        cleaningFrequency,
         hasPets === 'yes',
-        desiredDate1 || null,
-        desiredDate2 || null,
-        desiredDate3 || null,
+        desiredDate1,
+        desiredDate2,
+        desiredDate3,
         name,
         email,
         phone,
@@ -114,14 +108,14 @@ export async function POST(request: NextRequest) {
         city,
         state,
         zipCode,
-        specialInstructions || null,
-        additionalDetails || null
+        specialInstructions,
+        additionalDetails
       ]
     )) as any
 
     const quoteId = quoteResult.insertId
 
-    // Add additional services if selected
+    // Process additional services (same as before)
     const additionalServices = [
       { service: 'laundry', selected: laundry },
       { service: 'folding_clothes', selected: foldingClothes },
@@ -141,43 +135,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Process image uploads - FIXED: Better error handling and logging
+    // Process image uploads
     const imageFiles = formData.getAll('images') as File[]
     const uploadedImages = []
-    
-    console.log(`Processing ${imageFiles.length} image files...`)
 
     for (const imageFile of imageFiles) {
-      if (imageFile && imageFile.size > 0 && imageFile.name) {
-        try {
-          console.log(`Saving image: ${imageFile.name} (${imageFile.size} bytes)`)
-          const imageRecord = await saveImage(quoteId, imageFile)
-          uploadedImages.push(imageRecord)
-          console.log(`Image saved successfully: ${imageRecord.imageName}`)
-        } catch (imageError) {
-          console.error(`Failed to save image ${imageFile.name}:`, imageError)
-          // Continue with other images even if one fails
-        }
+      if (imageFile.size > 0) {
+        const imageRecord = await saveImage(quoteId, imageFile)
+        uploadedImages.push(imageRecord)
       }
     }
 
+    // Calculate price (your existing function)
     console.log("Calculating price...")
     const estimatedPrice = await calculateQuotePrice(quoteId)
     console.log("Calculated price:", estimatedPrice)
 
-    // Send email notifications (non-blocking)
-    try {
-      // Send confirmation to user
-      emailService.sendQuoteConfirmation(email, name, quoteId, "temporary-token-placeholder")
-        .catch(err => console.error("Failed to send user confirmation email:", err))
-      
-      // Send notification to admin
-      emailService.sendAdminNotification(quoteId, name, email)
-        .catch(err => console.error("Failed to send admin notification email:", err))
-    } catch (emailError) {
-      console.error("Email sending error:", emailError)
-      // Don't fail the request if emails fail
-    }
 
     return NextResponse.json({
       success: true,
@@ -203,7 +176,7 @@ async function saveImage(quoteId: number, imageFile: File): Promise<any> {
     const buffer = Buffer.from(bytes)
     
     // Generate unique filename
-    const fileExtension = imageFile.name.split('.').pop() || 'jpg'
+    const fileExtension = imageFile.name.split('.').pop()
     const fileName = `${uuidv4()}.${fileExtension}`
     const uploadDir = path.join(process.cwd(), 'public/uploads/quotes')
     
@@ -231,9 +204,12 @@ async function saveImage(quoteId: number, imageFile: File): Promise<any> {
     console.error("Error saving image:", error)
     throw error
   }
+
 }
 
-async function calculateQuotePrice(quoteId: number): Promise<number> {
+
+// Add the calculation function
+  async function calculateQuotePrice(quoteId: number): Promise<number> {
   try {
     const quoteData = (await query(
       `SELECT qr.*, sp.base_price, sp.price_per_bedroom, sp.price_per_bathroom, 

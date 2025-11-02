@@ -224,6 +224,8 @@ export function ScheduleCalendar() {
                     <div>
                       <span className="text-muted-foreground">Rooms:</span>
                       <p className="font-medium">{selectedEvent.extendedProps.quote.rooms}</p>
+                      <span className="text-muted-foreground"> bath Rooms:</span>
+                      <p className="font-medium">{selectedEvent.extendedProps.quote.bathrooms}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Price:</span>

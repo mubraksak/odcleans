@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Mail, Download } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
-export default function PaymentSuccessPage() {
+// Create a separate component that uses useSearchParams
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const quoteId = searchParams.get('quote_id')
   const [quoteDetails, setQuoteDetails] = useState<any>(null)
@@ -93,5 +94,22 @@ export default function PaymentSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Main component with Suspense boundary
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-6">
+            <div className="text-center">Loading payment details...</div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }

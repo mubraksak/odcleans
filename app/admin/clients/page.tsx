@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { ClientsTable } from "@/components/user-table"
 
 export default async function AdminClientsPage() {
   const cookieStore = await cookies()
@@ -19,10 +20,12 @@ export default async function AdminClientsPage() {
             <h1 className="font-serif font-bold text-3xl text-primary">Client Management</h1>
             <p className="text-muted-foreground">View and manage your customer relationships</p>
           </div>
-          <div className="text-center py-12">
+          {/* <div className="text-center py-12">
             <p className="text-muted-foreground">Client management interface coming soon...</p>
-          </div>
+          </div> */}
+           <ClientsTable />
         </div>
+       
       </main>
     </div>
   )

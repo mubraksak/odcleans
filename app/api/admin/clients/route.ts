@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     const clientsQuery = `
       SELECT u.*, 
              COUNT(qr.id) as total_quotes,
-             COUNT(CASE WHEN qr.status = 'accepted' THEN 1 END) as accepted_quotes,
-             SUM(CASE WHEN qr.status = 'accepted' THEN qr.proposed_price ELSE 0 END) as total_spent,
+             COUNT(CASE WHEN qr.status = 'scheduled' THEN 1 END) as accepted_quotes,
+             SUM(CASE WHEN qr.status = 'scheduled' THEN qr.total_price ELSE 0 END) as total_spent,
              MAX(qr.created_at) as last_quote_date
       FROM users u
       LEFT JOIN quote_requests qr ON u.id = qr.user_id

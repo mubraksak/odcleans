@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +24,7 @@ interface Quote {
   user_email: string
   property_type: string
   cleaning_type: string
-  rooms: number
+  bedrooms: number
   bathrooms: number
   square_footage?: number
   desired_date?: string
@@ -84,13 +85,13 @@ export function QuotesTable() {
     if (selectedQuote) {
       setBasePrice(selectedQuote.base_price?.toString() || selectedQuote.proposed_price?.toString() || "")
       setAdminNotes(selectedQuote.admin_notes || "")
-      
+
       const initialServices: { [key: string]: boolean } = {}
       if (selectedQuote.additional_services) {
-        const services = Array.isArray(selectedQuote.additional_services) 
-          ? selectedQuote.additional_services 
+        const services = Array.isArray(selectedQuote.additional_services)
+          ? selectedQuote.additional_services
           : parseAdditionalServices(selectedQuote.additional_services)
-        
+
         services.forEach(service => {
           initialServices[service.service_type] = true
         })
@@ -239,31 +240,31 @@ export function QuotesTable() {
     }
   }
 
-const handleScheduleBooking = async () => {
-  if (!quoteToSchedule || !selectedScheduleDate || !selectedScheduleTime) return;
+  const handleScheduleBooking = async () => {
+    if (!quoteToSchedule || !selectedScheduleDate || !selectedScheduleTime) return;
 
-  try {
-    const response = await fetch(`/api/admin/bookings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        quote_id: quoteToSchedule.id,
-        scheduled_date: `${selectedScheduleDate}T${selectedScheduleTime}`,
-        status: "scheduled"
-      }),
-    });
+    try {
+      const response = await fetch(`/api/admin/bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quote_id: quoteToSchedule.id,
+          scheduled_date: `${selectedScheduleDate}T${selectedScheduleTime}`,
+          status: "scheduled"
+        }),
+      });
 
-    if (response.ok) {
-      // Refresh quotes and close modal
-      await fetchQuotes();
-      setQuoteToSchedule(null);
-      setSelectedScheduleDate("");
-      setSelectedScheduleTime("");
+      if (response.ok) {
+        // Refresh quotes and close modal
+        await fetchQuotes();
+        setQuoteToSchedule(null);
+        setSelectedScheduleDate("");
+        setSelectedScheduleTime("");
+      }
+    } catch (error) {
+      console.error("Error scheduling booking:", error);
     }
-  } catch (error) {
-    console.error("Error scheduling booking:", error);
-  }
-};
+  };
 
   // Get available date options from the quote
   const getDateOptions = (quote: Quote) => {
@@ -327,7 +328,7 @@ const handleScheduleBooking = async () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">{quote.cleaning_type.replace("_", " ")} • {quote.property_type}</p>
-                        <p className="text-sm text-muted-foreground">{quote.rooms} rooms, {quote.bathrooms} baths</p>
+                        <p className="text-sm text-muted-foreground">{quote.bedrooms} rooms, {quote.bathrooms} baths</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -339,19 +340,21 @@ const handleScheduleBooking = async () => {
                     <TableCell>{new Date(quote.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelectedQuote(quote)}>
-                        View Details
-                      </Button>
-                            {quote.status === "accepted" && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setQuoteToSchedule(quote)}
-              className="bg-green-100 text-green-800 hover:bg-green-200"
-            >
-              Schedule Date
-            </Button>
-          )}
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/admin/quotes/${quote.id}`}>
+                            View Details
+                          </Link>
+                        </Button>
+                        {quote.status === "accepted" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setQuoteToSchedule(quote)}
+                            className="bg-green-100 text-green-800 hover:bg-green-200"
+                          >
+                            Schedule Date
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -386,7 +389,7 @@ const handleScheduleBooking = async () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Bedrooms</Label><p className="font-medium">{selectedQuote.rooms}</p></div>
+                  <div><Label>Bedrooms</Label><p className="font-medium">{selectedQuote.bedrooms}</p></div>
                   <div><Label>Bathrooms</Label><p className="font-medium">{selectedQuote.bathrooms}</p></div>
                 </div>
 
@@ -486,73 +489,73 @@ const handleScheduleBooking = async () => {
       </Dialog>
 
       {/* Scheduling Modal */}
-<Dialog open={!!quoteToSchedule} onOpenChange={() => setQuoteToSchedule(null)}>
-  <DialogContent className="max-w-md">
-    <DialogHeader>
-      <DialogTitle>Schedule Booking for Quote #{quoteToSchedule?.id.toString().padStart(6, "0")}</DialogTitle>
-      <DialogDescription>
-        Customer: {quoteToSchedule?.user_name}
-      </DialogDescription>
-    </DialogHeader>
+      <Dialog open={!!quoteToSchedule} onOpenChange={() => setQuoteToSchedule(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Schedule Booking for Quote #{quoteToSchedule?.id.toString().padStart(6, "0")}</DialogTitle>
+            <DialogDescription>
+              Customer: {quoteToSchedule?.user_name}
+            </DialogDescription>
+          </DialogHeader>
 
-    {quoteToSchedule && (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Available Dates</Label>
-          <Select onValueChange={setSelectedScheduleDate}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a date" />
-            </SelectTrigger>
-            <SelectContent>
-              {quoteToSchedule.desired_date1 && (
-                <SelectItem value={quoteToSchedule.desired_date1}>
-                  {new Date(quoteToSchedule.desired_date1).toLocaleDateString()}
-                </SelectItem>
-              )}
-              {quoteToSchedule.desired_date2 && (
-                <SelectItem value={quoteToSchedule.desired_date2}>
-                  {new Date(quoteToSchedule.desired_date2).toLocaleDateString()}
-                </SelectItem>
-              )}
-              {quoteToSchedule.desired_date3 && (
-                <SelectItem value={quoteToSchedule.desired_date3}>
-                  {new Date(quoteToSchedule.desired_date3).toLocaleDateString()}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+          {quoteToSchedule && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Available Dates</Label>
+                <Select onValueChange={setSelectedScheduleDate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {quoteToSchedule.desired_date1 && (
+                      <SelectItem value={quoteToSchedule.desired_date1}>
+                        {new Date(quoteToSchedule.desired_date1).toLocaleDateString()}
+                      </SelectItem>
+                    )}
+                    {quoteToSchedule.desired_date2 && (
+                      <SelectItem value={quoteToSchedule.desired_date2}>
+                        {new Date(quoteToSchedule.desired_date2).toLocaleDateString()}
+                      </SelectItem>
+                    )}
+                    {quoteToSchedule.desired_date3 && (
+                      <SelectItem value={quoteToSchedule.desired_date3}>
+                        {new Date(quoteToSchedule.desired_date3).toLocaleDateString()}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <div className="space-y-2">
-          <Label>Select Time</Label>
-          <Select onValueChange={setSelectedScheduleTime}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a time" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="09:00">9:00 AM</SelectItem>
-              <SelectItem value="10:00">10:00 AM</SelectItem>
-              <SelectItem value="11:00">11:00 AM</SelectItem>
-              <SelectItem value="12:00">12:00 PM</SelectItem>
-              <SelectItem value="13:00">1:00 PM</SelectItem>
-              <SelectItem value="14:00">2:00 PM</SelectItem>
-              <SelectItem value="15:00">3:00 PM</SelectItem>
-              <SelectItem value="16:00">4:00 PM</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+              <div className="space-y-2">
+                <Label>Select Time</Label>
+                <Select onValueChange={setSelectedScheduleTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="09:00">9:00 AM</SelectItem>
+                    <SelectItem value="10:00">10:00 AM</SelectItem>
+                    <SelectItem value="11:00">11:00 AM</SelectItem>
+                    <SelectItem value="12:00">12:00 PM</SelectItem>
+                    <SelectItem value="13:00">1:00 PM</SelectItem>
+                    <SelectItem value="14:00">2:00 PM</SelectItem>
+                    <SelectItem value="15:00">3:00 PM</SelectItem>
+                    <SelectItem value="16:00">4:00 PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <Button 
-          onClick={handleScheduleBooking}
-          disabled={!selectedScheduleDate || !selectedScheduleTime}
-          className="w-full"
-        >
-          Confirm Schedule
-        </Button>
-      </div>
-    )}
-  </DialogContent>
-</Dialog>
+              <Button
+                onClick={handleScheduleBooking}
+                disabled={!selectedScheduleDate || !selectedScheduleTime}
+                className="w-full"
+              >
+                Confirm Schedule
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
