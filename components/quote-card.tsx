@@ -54,13 +54,15 @@ interface QuoteCardProps {
   quote: Quote
   onUpdate: () => void
   onEdit?: (quote: Quote) => void // Add this prop for edit functionality
+  showActions?: boolean
 }
 
-export function QuoteCard({ quote, onUpdate, onEdit }: QuoteCardProps) {
+export function QuoteCard({ quote, onUpdate, onEdit, showActions = true  }: QuoteCardProps) {
   const [isAccepting, setIsAccepting] = useState(false)
   const [scheduledDate, setScheduledDate] = useState("")
   const [showScheduling, setShowScheduling] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+ 
   
   const [isLoading, setIsLoading] = useState(false)
 
@@ -472,7 +474,7 @@ const handleAccept = async () => {
             className="w-full"
             size="sm"
           >
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="bg-green-600 hover:bg-green-700" />
             Accept & Pay
           </Button>
         )}
@@ -488,15 +490,21 @@ const handleAccept = async () => {
         )}
       </div>
 
-      <PaymentPopup
-        isOpen={showPayment}
-        onClose={() => setShowPayment(false)}
-        quoteId={quote.id}
-        amount={quote.total_price ?? 110}
-        customerEmail={quote.customer_email} // Make sure this is passed
-        customerName={quote.customer_name}   // Make sure this is passed
-        onPaymentSuccess={handlePaymentSuccess}
-      />
+     {showPayment && (
+  <PaymentPopup
+    quoteId={quote.id}
+    amount={quote.total_price || 0}
+    customerEmail={quote.customer_email || "user@example.com"} // Make sure this is populated
+    customerName={quote.customer_name || "Customer"}
+    isOpen={showPayment}
+    onClose={() => setShowPayment(false)}
+    onSuccess={() => {
+      setShowPayment(false)
+      // Update quote status or refresh data
+      onUpdate()
+    }}
+  />
+)}
     </>
 
     {/* END TODO */}

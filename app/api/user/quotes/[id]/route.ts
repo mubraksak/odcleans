@@ -3,7 +3,6 @@ import { query } from "@/lib/database"
 import { getCurrentUser } from "@/lib/auth-utils"
 import { emailService } from "@/lib/email-service"
 
-// GET endpoint to fetch quote details with additional services
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,9 +15,23 @@ export async function GET(
 
     const { id: quoteId } = await params
 
-    // Verify quote belongs to user and fetch quote details
+    // Verify quote belongs to user and fetch quote details with customer data
     const quotes = (await query(
-      "SELECT * FROM quote_requests WHERE id = ? AND user_id = ?",
+      `SELECT 
+        qr.*, 
+        u.email as customer_email,
+        u.name as customer_name,
+        b.id as booking_id, 
+        b.scheduled_date, 
+        b.status as booking_status,
+        GROUP_CONCAT(CONCAT(qas.service_type, ':', COALESCE(asp.base_price, 0)) SEPARATOR ';') as additional_services
+      FROM quote_requests qr
+      JOIN users u ON qr.user_id = u.id
+      LEFT JOIN bookings b ON qr.id = b.quote_request_id
+      LEFT JOIN quote_additional_services qas ON qr.id = qas.quote_id
+      LEFT JOIN additional_service_pricing asp ON qas.service_type = asp.name AND asp.is_active = TRUE
+      WHERE qr.id = ? AND qr.user_id = ?
+      GROUP BY qr.id, u.id, b.id, b.scheduled_date, b.status`,
       [quoteId, user.id]
     )) as any[]
 
@@ -26,18 +39,20 @@ export async function GET(
       return NextResponse.json({ error: "Quote not found" }, { status: 404 })
     }
 
-    // Fetch additional services from quote_additional_services table
-    const additionalServices = (await query(
-      "SELECT * FROM quote_additional_services WHERE quote_id = ? ORDER BY id",
-      [quoteId]
-    )) as any[]
-
     const quote = quotes[0]
 
     return NextResponse.json({
       quote: {
         ...quote,
-        additional_services: additionalServices
+        // Ensure customer data is properly formatted
+        customer_email: quote.customer_email || user.email,
+        customer_name: quote.customer_name || user.name,
+        additional_services: quote.additional_services 
+          ? quote.additional_services.split(';').map((service: string) => {
+              const [service_type, price] = service.split(':')
+              return { service_type, price: parseFloat(price) }
+            })
+          : []
       }
     })
   } catch (error) {
@@ -68,16 +83,16 @@ export async function PATCH(
 
     // Verify quote belongs to user
      // Verify quote belongs to user and get quote details
-    const quotes = (await query(
+    const quotess = (await query(
       "SELECT qr.*, u.email as user_email, u.name as user_name FROM quote_requests qr JOIN users u ON qr.user_id = u.id WHERE qr.id = ? AND qr.user_id = ?", 
       [quoteId, user.id]
     )) as any[]
 
-    if (quotes.length === 0) {
+    if (quotess.length === 0) {
       return NextResponse.json({ error: "Quote not found" }, { status: 404 })
     }
 
-    const quote = quotes[0]
+    const quotee = quotess[0]
 
   if (action === "accept") {
   // Update the quote status
@@ -106,11 +121,11 @@ export async function PATCH(
     // Send acceptance emails (non-blocking)
       try {
         // Send to user
-        emailService.sendQuoteAcceptedUser(quote.customer_email, quote.customer_name, Number(quoteId), scheduledDate)
+        emailService.sendQuoteAcceptedUser(quotee.customer_email, quotee.customer_name, Number(quoteId), scheduledDate)
           .catch(err => console.error("Failed to send user acceptance email:", err))
         
         // Send to admin
-        emailService.sendQuoteAcceptedAdmin(quote.customer_email, quote.customer_name, Number(quoteId), scheduledDate)
+        emailService.sendQuoteAcceptedAdmin(quotee.customer_email, quotee.customer_name, Number(quoteId), scheduledDate)
           .catch(err => console.error("Failed to send admin acceptance email:", err))
       } catch (emailError) {
         console.error("Email sending error:", emailError)
@@ -169,6 +184,82 @@ export async function PATCH(
         throw error
       }
     }
+    // Add to your PATCH function
+else if (action === "payment_success") {
+  const { payment_intent_id, amount, customer_email, customer_name } = body
+  
+  console.log("🔄 Processing payment success for quote:", {
+    quoteId,
+    payment_intent_id,
+    amount
+  })
+
+  try {
+    // Remove transaction commands - execute queries individually
+    // 1. Update quote status to 'paid'
+    await query(
+      "UPDATE quote_requests SET status = 'paid', updated_at = NOW() WHERE id = ?",
+      [quoteId]
+    )
+
+    // 2. Record transaction in database
+    if (payment_intent_id) {
+      await query(
+        `INSERT INTO transactions (
+          quote_id, 
+          stripe_payment_intent_id, 
+          amount, 
+          currency, 
+          status, 
+          customer_email,
+          customer_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          quoteId,
+          payment_intent_id,
+          amount || quotee.total_price || 0,
+          'usd',
+          'succeeded',
+          customer_email || quotee.customer_email,
+          customer_name || quotee.customer_name
+        ]
+      )
+    }
+
+    // 3. Update booking status if exists, or create one
+    const existingBookings = await query(
+      "SELECT id FROM bookings WHERE quote_request_id = ?",
+      [quoteId]
+    ) as any[]
+
+    if (existingBookings.length > 0) {
+      await query(
+        "UPDATE bookings SET status = 'confirmed' WHERE quote_request_id = ?",
+        [quoteId]
+      )
+    } else {
+      await query(
+        "INSERT INTO bookings (quote_request_id, status) VALUES (?, 'confirmed')",
+        [quoteId]
+      )
+    }
+
+    console.log("✅ Quote status updated to paid and transaction recorded")
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Payment recorded successfully",
+      quote_id: quoteId
+    })
+
+  } catch (error) {
+    console.error("❌ Error updating quote status:", error)
+    return NextResponse.json(
+      { error: "Failed to update quote status" },
+      { status: 500 }
+    )
+  }
+}
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
   } catch (error) {

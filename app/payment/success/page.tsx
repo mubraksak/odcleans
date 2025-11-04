@@ -1,115 +1,189 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Mail, Download } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle, Loader2 } from "lucide-react"
+import Link from "next/link"
 
-// Create a separate component that uses useSearchParams
-function PaymentSuccessContent() {
+export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
-  const quoteId = searchParams.get('quote_id')
-  const [quoteDetails, setQuoteDetails] = useState<any>(null)
+  const router = useRouter()
+  const [paymentStatus, setPaymentStatus] = useState<"loading" | "success" | "error">("loading")
+  const [isUpdating, setIsUpdating] = useState(false)
+  
+  const quoteId = searchParams.get("quote_id")
+  const amount = searchParams.get("amount")
+  const customerEmail = searchParams.get("customer_email")
+  const customerName = searchParams.get("customer_name")
+  const payment_intent = searchParams.get("payment_intent")
+  const payment_intent_client_secret = searchParams.get("payment_intent_client_secret")
+  const redirect_status = searchParams.get("redirect_status")
 
   useEffect(() => {
-    if (quoteId) {
-      fetchQuoteDetails()
-    }
-  }, [quoteId])
+    const processPaymentSuccess = async () => {
+      console.log("🔄 Processing payment success with params:", {
+        quoteId,
+        payment_intent,
+        redirect_status
+      })
 
-  const fetchQuoteDetails = async () => {
-    try {
-      const response = await fetch(`/api/quotes/${quoteId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setQuoteDetails(data)
+      if (!quoteId) {
+        console.error("❌ No quote ID found in URL")
+        setPaymentStatus("error")
+        return
       }
-    } catch (error) {
-      console.error('Error fetching quote details:', error)
-    }
-  }
 
-  const handleDownloadReceipt = async () => {
-    // Implement receipt download
-    console.log('Download receipt for quote:', quoteId)
-  }
+      try {
+        setIsUpdating(true)
+
+        // Update quote status via API
+        const response = await fetch(`/api/user/quotes/${quoteId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "payment_success",
+            payment_intent_id: payment_intent,
+            amount: amount ? parseFloat(amount) : null,
+            customer_email: customerEmail,
+            customer_name: customerName,
+          }),
+        })
+
+        if (response.ok) {
+          console.log("✅ Quote status updated successfully")
+          setPaymentStatus("success")
+          
+          // Wait a moment then redirect to dashboard
+          setTimeout(() => {
+            router.push("/dashboard")
+          }, 3000)
+        } else {
+          const errorData = await response.json()
+          console.error("❌ Failed to update quote status:", errorData)
+          setPaymentStatus("error")
+        }
+      } catch (error) {
+        console.error("❌ Error updating quote status:", error)
+        setPaymentStatus("error")
+      } finally {
+        setIsUpdating(false)
+      }
+    }
+
+    // Only process if we have a quote ID
+    if (quoteId) {
+      processPaymentSuccess()
+    } else {
+      setPaymentStatus("error")
+    }
+  }, [quoteId, payment_intent, amount, customerEmail, customerName, router])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-green-100 p-3">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-green-600">
-            Payment Successful!
-          </CardTitle>
-          <CardDescription>
-            Thank you for your payment. Your cleaning service has been confirmed.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {quoteDetails && (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Quote #:</span>
-                <span className="font-semibold">{quoteId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Service:</span>
-                <Badge variant="secondary">
-                  {quoteDetails.cleaningType?.replace('_', ' ')}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Amount Paid:</span>
-                <span className="font-semibold text-green-600">
-                  ${quoteDetails.totalPrice}
-                </span>
-              </div>
+          {paymentStatus === "success" && (
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
           )}
+          {paymentStatus === "loading" && (
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+          )}
+          {paymentStatus === "error" && (
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-red-600" />
+            </div>
+          )}
+          
+          <CardTitle className="text-2xl">
+            {paymentStatus === "success" && "Payment Successful!"}
+            {paymentStatus === "loading" && "Processing Payment..."}
+            {paymentStatus === "error" && "Payment Issue"}
+          </CardTitle>
+          
+          <CardDescription>
+            {paymentStatus === "success" && "Thank you for your payment! Your service has been confirmed."}
+            {paymentStatus === "loading" && "Please wait while we confirm your payment..."}
+            {paymentStatus === "error" && "There was an issue with your payment."}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {paymentStatus === "success" && (
+            <>
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <p className="text-green-800 font-semibold">
+                  Your cleaning service has been confirmed!
+                </p>
+                {quoteId && (
+                  <p className="text-sm text-green-700 mt-1">
+                    Quote ID: #{quoteId.toString().padStart(6, "0")}
+                  </p>
+                )}
+                {amount && (
+                  <p className="text-sm text-green-700">
+                    Amount Paid: ${parseFloat(amount).toFixed(2)}
+                  </p>
+                )}
+              </div>
 
-          <div className="space-y-2">
-            <Button className="w-full" onClick={handleDownloadReceipt}>
-              <Download className="mr-2 h-4 w-4" />
-              Download Receipt
-            </Button>
-            <Button variant="outline" className="w-full">
-              <Mail className="mr-2 h-4 w-4" />
-              Email Confirmation
-            </Button>
-            <Button variant="ghost" className="w-full" asChild>
-              <a href="/">Return to Home</a>
-            </Button>
-          </div>
+              <p className="text-muted-foreground">
+                You will be redirected to your dashboard shortly...
+              </p>
 
-          <p className="text-xs text-muted-foreground">
-            A confirmation email has been sent to your email address with all the details.
-          </p>
+              <div className="flex gap-2">
+                <Button asChild variant="outline" className="flex-1">
+                  <Link href="/dashboard">
+                    Go to Dashboard Now
+                  </Link>
+                </Button>
+                <Button asChild className="flex-1 bg-accent">
+                  <Link href="/quote">
+                    New Quote
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
+
+          {paymentStatus === "loading" && (
+            <>
+              <p className="text-muted-foreground">
+                Please wait while we update your account and send your receipt...
+              </p>
+              {isUpdating && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Updating your quote status...
+                </div>
+              )}
+            </>
+          )}
+
+          {paymentStatus === "error" && (
+            <>
+              <p className="text-red-600">
+                There was an issue processing your payment. Please check your dashboard for status.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If you were charged but see this message, please contact support with your quote ID.
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/dashboard">
+                  Go to Dashboard
+                </Link>
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-// Main component with Suspense boundary
-export default function PaymentSuccessPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="p-6">
-            <div className="text-center">Loading payment details...</div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
-      <PaymentSuccessContent />
-    </Suspense>
   )
 }

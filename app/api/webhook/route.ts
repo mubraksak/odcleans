@@ -47,7 +47,7 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   const quoteId = paymentIntent.metadata.quoteId
 
   // Update quote status to "paid"
-  await updateQuoteStatus(parseInt(quoteId), 'paid')
+  await updateQuoteStatus(parseInt(quoteId), 'accepted')
   
   // Send confirmation email
   // await emailService.sendPaymentConfirmation(...)
@@ -57,7 +57,7 @@ async function handleFailedPayment(paymentIntent: Stripe.PaymentIntent) {
   const quoteId = paymentIntent.metadata.quoteId
   
   // Update quote status to "payment_failed"
-  await updateQuoteStatus(parseInt(quoteId), 'payment_failed')
+  await updateQuoteStatus(parseInt(quoteId), 'qouted')
 }
 
 

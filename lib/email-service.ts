@@ -635,6 +635,8 @@ async sendQuoteCreatedUser(quoteId: number, userName: string, userEmail: string,
   })
 }
 
+
+
 // Send quote created notification to admin (confirmation)
 async sendQuoteCreatedAdmin(quoteId: number, userName: string, userEmail: string,  price: number) {
   const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes`
@@ -697,6 +699,209 @@ async sendQuoteCreatedAdmin(quoteId: number, userName: string, userEmail: string
   }
   return false
 }
+
+
+async sendPaymentReceipt(quoteId: number, customerName: string, customerEmail: string, amount: number, paymentIntentId: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #059669; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9fafb; padding: 30px; }
+        .button { background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .receipt-box { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #059669; }
+        .info-item { margin: 10px 0; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+        .status-badge { background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Payment Confirmed</h1>
+          <p>Thank you for your payment!</p>
+        </div>
+        <div class="content">
+          <p>Hello ${customerName},</p>
+          <p>Your payment for cleaning services has been successfully processed. Here's your receipt:</p>
+          
+          <div class="receipt-box">
+            <h3 style="margin-top: 0; color: #059669;">Payment Receipt</h3>
+            
+            <div class="info-item">
+              <strong>Quote ID:</strong> #${quoteId.toString().padStart(6, '0')}
+            </div>
+            
+            <div class="info-item">
+              <strong>Amount Paid:</strong> $${amount.toFixed(2)}
+            </div>
+            
+            <div class="info-item">
+              <strong>Payment Date:</strong> ${new Date().toLocaleString()}
+            </div>
+            
+            <div class="info-item">
+              <strong>Transaction ID:</strong> ${paymentIntentId}
+            </div>
+            
+            <div class="info-item">
+              <strong>Status:</strong> <span class="status-badge">Paid</span>
+            </div>
+          </div>
+
+          <h4>What happens next?</h4>
+          <ul>
+            <li>Your cleaning service is now confirmed</li>
+            <li>Our team will contact you within 24 hours to schedule your cleaning</li>
+            <li>You'll receive a separate email with scheduling details</li>
+            <li>You can track your service status in your dashboard</li>
+          </ul>
+
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXTAUTH_URL}/dashboard" class="button">View Your Dashboard</a>
+          </p>
+          
+          <p>If you have any questions about your payment or service, please contact our support team.</p>
+          
+          <p>Thank you for choosing OdClean!</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} OdClean Professional Cleaning Services. All rights reserved.</p>
+          <p>support@odclean.com | (555) 123-4567</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+Payment Confirmed
+
+Hello ${customerName},
+
+Your payment for cleaning services has been successfully processed. Here's your receipt:
+
+PAYMENT RECEIPT
+Quote ID: #${quoteId.toString().padStart(6, '0')}
+Amount Paid: $${amount.toFixed(2)}
+Payment Date: ${new Date().toLocaleString()}
+Transaction ID: ${paymentIntentId}
+Status: Paid
+
+What happens next?
+- Your cleaning service is now confirmed
+- Our team will contact you within 24 hours to schedule your cleaning
+- You'll receive a separate email with scheduling details
+- You can track your service status in your dashboard
+
+View your dashboard: ${process.env.NEXTAUTH_URL}/dashboard
+
+If you have any questions about your payment or service, please contact our support team.
+
+Thank you for choosing OdClean!
+
+© ${new Date().getFullYear()} OdClean Professional Cleaning Services.
+support@odclean.com | (555) 123-4567
+  `
+
+  return this.sendEmail({
+    to: customerEmail,
+    subject: `Payment Receipt - OdClean Quote #${quoteId.toString().padStart(6, '0')}`,
+    html,
+    text
+  })
+}
+
+async sendPaymentReceivedAdmin(quoteId: number, customerName: string, customerEmail: string, amount: number, paymentIntentId: string) {
+  const adminLink = `${process.env.NEXTAUTH_URL}/admin/quotes/${quoteId}`
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #059669; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9fafb; padding: 30px; }
+        .button { background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .payment-box { background: #dcfce7; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #059669; }
+        .info-item { margin: 8px 0; padding: 6px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Payment Received</h1>
+          <p>Customer has successfully paid for a quote</p>
+        </div>
+        <div class="content">
+          <p>Hello Admin,</p>
+          <p>A customer has successfully completed payment for their cleaning service quote:</p>
+          
+          <div class="payment-box">
+            <h3 style="margin-top: 0; color: #059669;">Payment Details</h3>
+            
+            <div class="info-item">
+              <strong>Quote ID:</strong> #${quoteId.toString().padStart(6, '0')}
+            </div>
+            
+            <div class="info-item">
+              <strong>Customer:</strong> ${customerName}
+            </div>
+            
+            <div class="info-item">
+              <strong>Email:</strong> ${customerEmail}
+            </div>
+            
+            <div class="info-item">
+              <strong>Amount Paid:</strong> $${amount.toFixed(2)}
+            </div>
+            
+            <div class="info-item">
+              <strong>Transaction ID:</strong> ${paymentIntentId}
+            </div>
+            
+            <div class="info-item">
+              <strong>Payment Date:</strong> ${new Date().toLocaleString()}
+            </div>
+          </div>
+          
+          <p style="text-align: center; margin: 30px 0;">
+            <a href="${adminLink}" class="button">Review Quote Details</a>
+          </p>
+          
+          <p><strong>Next Steps:</strong></p>
+          <ul>
+            <li>Quote status has been automatically updated to "paid"</li>
+            <li>Customer has received payment confirmation email</li>
+            <li>Please contact the customer within 24 hours to schedule cleaning</li>
+            <li>Update booking status once scheduled</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} OdClean Professional Cleaning Services. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER
+  if (adminEmail) {
+    return this.sendEmail({
+      to: adminEmail,
+      subject: `Payment Received - Quote #${quoteId.toString().padStart(6, '0')} - ${customerName}`,
+      html,
+    })
+  }
+  return false
+}
+
 
 }
 

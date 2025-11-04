@@ -4,6 +4,8 @@ import { cookies } from "next/headers"
 import { generateToken } from "@/lib/auth-utils"
 
 export async function GET(request: NextRequest) {
+
+  
   try {
     const { searchParams } = new URL(request.url)
     const token = searchParams.get("token")

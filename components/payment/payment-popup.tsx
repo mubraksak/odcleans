@@ -2,408 +2,311 @@
 
 import { useState, useEffect } from "react"
 import { loadStripe } from "@stripe/stripe-js"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2, CreditCard, CheckCircle, AlertCircle, Mail } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { X } from "lucide-react"
 
-// Initialize Stripe with better error handling
-//let stripePromise: Promise<any> | null = null
-
-let stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-const getStripe = () => {
-  if (!stripePromise) {
-    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51SDl1l5ODYdZSy5GmYyjnclv5NAprwiJ3PhRKTQaLZIJsqTFydNhA1CDn6dC5UHfx2hlUd97Jz8NU0vEzyW9UuHb00jAT3E69L'
-    if (!publishableKey) {
-      console.error("❌ Stripe publishable key is missing")
-      throw new Error("Stripe configuration error: Missing publishable key")
-    }
-    
-    if (publishableKey.startsWith('pk_')) {
-      console.error("❌ Invalid Stripe publishable key format")
-      throw new Error("Stripe configuration error: Invalid key format")
-    }
-    
-    stripePromise = loadStripe(publishableKey)
-  }
-  return stripePromise
-}
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 interface PaymentPopupProps {
-  isOpen: boolean
-  onClose: () => void
   quoteId: number
   amount: number
-  customerEmail?: string
-  customerName?: string
-  onPaymentSuccess: (paymentIntentId: string) => void
+  customerEmail: string
+  customerName: string
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
 }
 
-export function PaymentPopup({
-  isOpen,
-  onClose,
-  quoteId,
-  amount,
-  customerEmail: initialCustomerEmail,
-  customerName: initialCustomerName,
-  onPaymentSuccess
-}: PaymentPopupProps) {
+function CheckoutForm({ 
+  quoteId, 
+  amount, 
+  customerEmail, 
+  customerName, 
+  onSuccess, 
+  onClose 
+}: Omit<PaymentPopupProps, 'isOpen'>) {
+  const stripe = useStripe()
+  const elements = useElements()
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
-  const [quoteDetails, setQuoteDetails] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-  
-  const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail || '')
-  const [customerName, setCustomerName] = useState(initialCustomerName || '')
+  const [errorMessage, setErrorMessage] = useState<string>("")
+  const [clientSecret, setClientSecret] = useState("")
 
+  // Create Payment Intent when component mounts
   useEffect(() => {
-    if (isOpen && quoteId) {
-      console.log("🔄 Payment popup opened with:", {
-        quoteId,
-        amount,
-        initialCustomerEmail,
-        initialCustomerName
-      })
-      setCustomerEmail(initialCustomerEmail || '')
-      setCustomerName(initialCustomerName || '')
-      fetchQuoteDetails()
-    } else {
-      setQuoteDetails(null)
-      setError(null)
-      setPaymentStatus('idle')
-    }
-  }, [isOpen, quoteId, initialCustomerEmail, initialCustomerName, amount])
+    const createPaymentIntent = async () => {
+      try {
+        setIsLoading(true)
+        setErrorMessage("")
 
-  const fetchQuoteDetails = async () => {
-    setIsLoadingDetails(true)
-    setError(null)
-    
-    try {
-      console.log(`📡 Fetching quote details for ID: ${quoteId}`)
-      const response = await fetch(`/api/quotes/${quoteId}`)
-      
-      if (response.ok) {
+        console.log("🔄 Creating payment intent with data:", {
+          quoteId,
+          amount: Math.round(amount * 100),
+          customerEmail,
+          customerName
+        })
+
+        const response = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quoteId: quoteId,
+            amount: Math.round(amount * 100),
+            customerEmail: customerEmail,
+            customerName: customerName,
+          }),
+        })
+
         const data = await response.json()
-        console.log("✅ Quote details fetched:", data)
-        setQuoteDetails(data)
-        
-        if (data.customerEmail && !customerEmail) {
-          setCustomerEmail(data.customerEmail)
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create payment intent")
         }
-        if (data.customerName && !customerName) {
-          setCustomerName(data.customerName)
-        }
-      } else {
-        console.warn('⚠️ Could not fetch quote details, using provided data')
+
+        console.log("✅ Payment intent created:", {
+          clientSecret: data.clientSecret ? `${data.clientSecret.substring(0, 20)}...` : 'missing',
+          status: data.status
+        })
+
+        setClientSecret(data.clientSecret)
+      } catch (error) {
+        console.error("❌ Error creating payment intent:", error)
+        setErrorMessage(error instanceof Error ? error.message : "Failed to initialize payment")
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('❌ Error fetching quote details:', error)
-    } finally {
-      setIsLoadingDetails(false)
     }
-  }
 
-  const validateForm = () => {
-    if (!customerEmail) {
-      setError("Customer email is required")
-      return false
+    if (stripe && elements) {
+      createPaymentIntent()
     }
-    
-    if (!customerEmail.includes('@') || !customerEmail.includes('.')) {
-      setError("Please enter a valid email address")
-      return false
-    }
-    
-    if (!customerName) {
-      setError("Customer name is required")
-      return false
-    }
-    
-    if (amount <= 0) {
-      setError("Invalid amount")
-      return false
-    }
-    
-    return true
-  }
+  }, [stripe, elements, quoteId, amount, customerEmail, customerName])
 
-  const handlePayment = async () => {
-    console.log("🔄 Starting payment process...")
-    
-    if (!validateForm()) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!stripe || !elements) {
+      console.error("Stripe not loaded")
+      return
+    }
+
+    if (!clientSecret) {
+      setErrorMessage("Payment not initialized. Please try again.")
       return
     }
 
     setIsLoading(true)
-    setPaymentStatus('processing')
-    setError(null)
+    setErrorMessage("")
 
     try {
-      // Step 1: Create payment intent
-      console.log("📡 Creating payment intent with:", {
-        quoteId,
-        amount: Math.round(amount * 100),
-        customerEmail,
-        customerName
-      })
+      console.log("🔄 Submitting payment...")
 
-      const paymentIntentResponse = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          quoteId,
-          amount: Math.round(amount * 100),
-          customerEmail,
-          customerName,
-        }),
-      })
-
-      const paymentData = await paymentIntentResponse.json()
-      console.log("📡 Payment intent response:", {
-        status: paymentIntentResponse.status,
-        ok: paymentIntentResponse.ok,
-        data: paymentData
-      })
-
-      if (!paymentIntentResponse.ok) {
-        throw new Error(paymentData.error || `Server error: ${paymentIntentResponse.status}`)
+      // First, submit the payment element to validate inputs
+      const { error: submitError } = await elements.submit()
+      
+      if (submitError) {
+        console.error("❌ Payment element validation error:", submitError)
+        setErrorMessage(submitError.message || "Please check your payment details")
+        setIsLoading(false)
+        return
       }
 
-      if (!paymentData.clientSecret) {
-        throw new Error("No client secret received from server")
-      }
-
-      // Step 2: Initialize Stripe
-      console.log("🔄 Initializing Stripe...")
-      const stripe = await getStripe()
-      if (!stripe) {
-        throw new Error("Stripe failed to initialize")
-      }
-      console.log("✅ Stripe initialized successfully")
-
-      // Step 3: Confirm payment
-      console.log("🔄 Confirming payment with Stripe...")
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-        clientSecret: paymentData.clientSecret,
+      // Then confirm the payment - ALWAYS redirect for better UX
+      const { error } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
         confirmParams: {
-          return_url: `${window.location.origin}/payment/success?quote_id=${quoteId}`,
+          return_url: `${window.location.origin}/payment/success?quote_id=${quoteId}&amount=${amount}&customer_email=${encodeURIComponent(customerEmail)}&customer_name=${encodeURIComponent(customerName)}`,
         },
-        redirect: 'if_required'
+        redirect: 'always' // Always redirect to handle all payment methods properly
       })
 
-      console.log("🔄 Stripe confirmation result:", { stripeError, paymentIntent })
-
-      if (stripeError) {
-        console.error("❌ Stripe error details:", {
-          type: stripeError.type,
-          code: stripeError.code,
-          message: stripeError.message,
-          decline_code: stripeError.decline_code,
-          payment_intent: stripeError.payment_intent
-        })
+      if (error) {
+        console.error("❌ Payment confirmation error:", error)
         
-        let errorMessage = stripeError.message || "Payment failed"
-        
-        // Provide more specific error messages
-        if (stripeError.type === 'card_error') {
-          errorMessage = `Card error: ${stripeError.message}`
-        } else if (stripeError.type === 'validation_error') {
-          errorMessage = `Validation error: ${stripeError.message}`
-        } else if (stripeError.type === 'invalid_request_error') {
-          errorMessage = `Invalid request: ${stripeError.message}, ${stripeError.code}`
+        if (error.type === "card_error" || error.type === "validation_error") {
+          setErrorMessage(error.message || "Payment failed")
+        } else {
+          setErrorMessage("An unexpected error occurred. Please try again.")
         }
-        
-        throw new Error(errorMessage)
+        setIsLoading(false)
       }
-
-      // Step 4: Handle success
-      console.log("✅ Payment successful!")
-      setPaymentStatus('success')
-      onPaymentSuccess(paymentData.paymentIntentId)
+      // If no error, the user will be redirected to the success page
       
-      setTimeout(() => {
-        onClose()
-        setPaymentStatus('idle')
-      }, 2000)
-
     } catch (error) {
-      console.error("❌ Payment processing error details:", error)
-      setPaymentStatus('error')
-      
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Payment processing failed. Please try again.'
-      
-      setError(errorMessage)
-    } finally {
+      console.error("❌ Unexpected error during payment:", error)
+      setErrorMessage("An unexpected error occurred. Please try again.")
       setIsLoading(false)
     }
   }
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount)
-  }
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {errorMessage}
+        </div>
+      )}
 
-  const getCleaningTypeDisplay = (type: string) => {
-    const types: { [key: string]: string } = {
-      'standard': 'Standard Cleaning',
-      'deep': 'Deep Cleaning',
-      'post_construction': 'Post-Construction Cleaning'
+      {clientSecret ? (
+        <>
+          <PaymentElement 
+            options={{
+              layout: "tabs",
+            }}
+          />
+          
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!stripe || isLoading || !clientSecret}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              {isLoading ? "Processing..." : `Pay $${amount}`}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p>Initializing payment...</p>
+          {isLoading && <p className="text-sm text-muted-foreground">Setting up secure payment</p>}
+        </div>
+      )}
+    </form>
+  )
+}
+
+export function PaymentPopup({
+  quoteId,
+  amount,
+  customerEmail,
+  customerName,
+  isOpen,
+  onClose,
+  onSuccess
+}: PaymentPopupProps) {
+  const [clientSecret, setClientSecret] = useState("")
+  const [isInitializing, setIsInitializing] = useState(false)
+
+  // Reset when popup closes
+  useEffect(() => {
+    if (!isOpen) {
+      setClientSecret("")
     }
-    return types[type] || type.replace('_', ' ')
-  }
+  }, [isOpen])
+
+  // Create payment intent when popup opens
+  useEffect(() => {
+    if (isOpen && !clientSecret) {
+      const initializePayment = async () => {
+        try {
+          setIsInitializing(true)
+          console.log("🔄 Initializing payment for quote:", quoteId)
+
+          const response = await fetch("/api/create-payment-intent", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              quoteId: quoteId,
+              amount: Math.round(amount * 100),
+              customerEmail: customerEmail,
+              customerName: customerName,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to create payment intent")
+          }
+
+          console.log("✅ Payment intent created:", {
+            clientSecret: data.clientSecret ? `${data.clientSecret.substring(0, 20)}...` : 'missing'
+          })
+
+          setClientSecret(data.clientSecret)
+        } catch (error) {
+          console.error("❌ Error initializing payment:", error)
+        } finally {
+          setIsInitializing(false)
+        }
+      }
+
+      initializePayment()
+    }
+  }, [isOpen, clientSecret, quoteId, amount, customerEmail, customerName])
+
+  if (!isOpen) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Complete Your Payment
-          </DialogTitle>
-          <DialogDescription>
-            Secure payment processed by Stripe
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Error Display */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="break-words">
-                <strong>Payment Error:</strong> {error}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Customer Information Form */}
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="customerName" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Full Name *
-              </Label>
-              <Input
-                id="customerName"
-                type="text"
-                placeholder="Enter your full name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customerEmail" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Address *
-              </Label>
-              <Input
-                id="customerEmail"
-                type="email"
-                placeholder="Enter your email address"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                required
-              />
-            </div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Complete Payment</CardTitle>
+            <CardDescription>
+              Pay ${amount} for your cleaning service
+            </CardDescription>
           </div>
-
-          {/* Quote Summary */}
-          <Card>
-            <CardContent className="p-4">
-              {isLoadingDetails ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  <span className="text-sm">Loading quote details...</span>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Quote #</span>
-                    <span className="font-semibold">{quoteId}</span>
-                  </div>
-                  
-                  {quoteDetails && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Service</span>
-                      <Badge variant="secondary">
-                        {getCleaningTypeDisplay(quoteDetails.cleaningType)}
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between items-center font-bold text-lg">
-                      <span>Total Amount</span>
-                      <span className="text-primary">
-                        {formatAmount(amount)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Payment Status */}
-          {paymentStatus === 'processing' && (
-            <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Processing payment...</span>
-            </div>
-          )}
-
-          {paymentStatus === 'success' && (
-            <div className="flex items-center justify-center gap-2 p-4 bg-green-50 rounded-lg">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-600">Payment successful!</span>
-            </div>
-          )}
-
-          {/* Payment Button */}
           <Button
-            onClick={handlePayment}
-            disabled={isLoading || paymentStatus === 'processing' || paymentStatus === 'success' || !customerEmail || !customerName}
-            className="w-full"
-            size="lg"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+            disabled={isInitializing}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Pay {formatAmount(amount)}
-              </>
-            )}
+            <X className="h-4 w-4" />
           </Button>
-
-          <div className="text-xs text-center text-muted-foreground">
-            🔒 Your payment is secure and encrypted
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </CardHeader>
+        <CardContent>
+          {clientSecret ? (
+            <Elements 
+              stripe={stripePromise}
+              options={{
+                clientSecret: clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: '#059669',
+                  }
+                }
+              }}
+            >
+              <CheckoutForm
+                quoteId={quoteId}
+                amount={amount}
+                customerEmail={customerEmail}
+                customerName={customerName}
+                onSuccess={onSuccess}
+                onClose={onClose}
+              />
+            </Elements>
+          ) : (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p>{isInitializing ? "Setting up payment..." : "Initializing payment..."}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Please wait while we prepare your secure payment
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

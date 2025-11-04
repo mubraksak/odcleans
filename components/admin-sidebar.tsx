@@ -28,6 +28,12 @@ const navigation = [
     href: "/admin/schedule",
     icon: "📅",
   },
+  // Add this to your navigation items
+{
+  name: "Transactions",
+  href: "/admin/transactions",
+  icon: "💳",
+},
   {
     name: "Service-managemet",
     href: "/admin/service-management",

@@ -1,6 +1,7 @@
-// app/api/create-payment-intent/route.ts
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
+import { query } from "@/lib/database"
+import { emailService } from "@/lib/email-service"
 
 // Validate environment variables first
 function initializeStripe() {
@@ -20,7 +21,7 @@ function initializeStripe() {
   // Initialize Stripe with error handling
   try {
     const stripe = new Stripe(secretKey, {
-      apiVersion: "2024-04-10" as any, // Use stable version
+      apiVersion: "2024-04-10" as any,
     });
     return stripe;
   } catch (error) {
@@ -49,16 +50,25 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate amount
+    const amountInCents = Math.round(Number(amount));
+    if (isNaN(amountInCents) || amountInCents < 50) { // Minimum 50 cents
+      return NextResponse.json(
+        { error: "Invalid amount. Minimum payment is $0.50" },
+        { status: 400 }
+      );
+    }
+
     console.log("💳 Creating payment intent...", {
       quoteId,
-      amount,
-      customerEmail: customerEmail.substring(0, 5) + '...', // Log partial email for privacy
+      amount: amountInCents,
+      customerEmail: customerEmail.substring(0, 5) + '...',
       hasCustomerName: !!customerName
     });
 
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(amount)), // Ensure it's a number
+      amount: amountInCents,
       currency: "usd",
       automatic_payment_methods: {
         enabled: true,
@@ -69,6 +79,7 @@ export async function POST(request: Request) {
         customer_name: customerName || "",
       },
       description: `Cleaning Service - Quote #${quoteId}`,
+      receipt_email: customerEmail,
     });
 
     console.log("✅ Payment intent created successfully:", {

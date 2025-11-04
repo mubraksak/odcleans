@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+
 interface AdditionalService {
   service_type: string
   price: number
 }
-
 
 interface Quote {
   id: number
@@ -46,7 +46,15 @@ interface Quote {
   customer_name: string
 }
 
-export function UserDashboard() {
+interface UserDashboardProps {
+  user: {
+    id: number
+    email: string
+    name: string
+  }
+}
+
+export function UserDashboard({ user }: UserDashboardProps) {
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null)
@@ -54,25 +62,55 @@ export function UserDashboard() {
   const [userNotes, setUserNotes] = useState("")
   const [additionalServices, setAdditionalServices] = useState<{ [key: string]: boolean }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [existingServices, setExistingServices] = useState<AdditionalService[]>([])
 
-
- const [existingServices, setExistingServices] = useState<AdditionalService[]>([])
-  
-  const fetchQuotes = async () => {
-    try {
-      const response = await fetch("/api/user/quotes")
-      if (response.ok) {
+  // Client-side session verification
+  useEffect(() => {
+    const verifyClientSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include"
+        })
+        
+        if (!response.ok) {
+          console.log("Session invalid, redirecting to login")
+          window.location.href = "/login"
+          return
+        }
+        
         const data = await response.json()
-        setQuotes(data.quotes)
+        console.log("Client session verified for user:", data.user.email)
+      } catch (error) {
+        console.error("Client session verification failed:", error)
+        window.location.href = "/login"
       }
-    } catch (error) {
-      console.error("Error fetching quotes:", error)
-    } finally {
-      setLoading(false)
     }
-  }
 
-  
+    verifyClientSession()
+  }, [])
+
+ // In your fetchQuotes function, make sure you're getting customer data:
+const fetchQuotes = async () => {
+  try {
+    const response = await fetch("/api/user/quotes")
+    if (response.ok) {
+      const data = await response.json()
+      // Ensure quotes have customer_email and customer_name
+      const quotesWithCustomerData = data.quotes.map((quote: any) => ({
+        ...quote,
+        customer_email: quote.customer_email || user.email, // Fallback to logged-in user email
+        customer_name: quote.customer_name || user.name, // Fallback to logged-in user name
+      }))
+      setQuotes(quotesWithCustomerData)
+    }
+  } catch (error) {
+    console.error("Error fetching quotes:", error)
+  } finally {
+    setLoading(false)
+  }
+}
+
   // Function to fetch quote details with additional services
   const fetchQuoteDetails = async (quoteId: number) => {
     try {
@@ -80,6 +118,8 @@ export function UserDashboard() {
       if (response.ok) {
         const data = await response.json()
         return data.quote
+      } else if (response.status === 401) {
+        window.location.href = "/login"
       }
     } catch (error) {
       console.error("Error fetching quote details:", error)
@@ -115,8 +155,6 @@ export function UserDashboard() {
     }
   }, [editingQuote])
 
-
-
   const parseAdditionalServices = (services: any): AdditionalService[] => {
     if (Array.isArray(services)) return services
     if (typeof services === 'string') {
@@ -133,16 +171,16 @@ export function UserDashboard() {
   }
 
   const getServicePrice = (serviceType: string): number => {
-  const servicePrices: { [key: string]: number } = {
-    laundry: 25,
-    folding_clothes: 15,
-    fridge_cleaning: 35,
-    baseboard_cleaning: 20,
-    cabinet_cleaning: 30,
-    window_cleaning: 40
+    const servicePrices: { [key: string]: number } = {
+      laundry: 25,
+      folding_clothes: 15,
+      fridge_cleaning: 35,
+      baseboard_cleaning: 20,
+      cabinet_cleaning: 30,
+      window_cleaning: 40
+    }
+    return servicePrices[serviceType] || 0
   }
-  return servicePrices[serviceType] || 0
-}
 
   const getServiceName = (serviceType: string): string => {
     const serviceNames: { [key: string]: string } = {
@@ -155,7 +193,7 @@ export function UserDashboard() {
     }
     return serviceNames[serviceType] || serviceType.replace('_', ' ')
   }
-// Calculate total price based on base price + selected services
+
   const calculateTotalPrice = () => {
     const base = Number(editingQuote?.base_price) || 0
     const additional = Object.entries(additionalServices).reduce((total, [serviceType, isSelected]) => {
@@ -191,7 +229,7 @@ export function UserDashboard() {
           suggested_price: parseFloat(suggestedPrice) || newTotalPrice,
           user_notes: userNotes,
           additional_services: selectedServices,
-          new_total_price: newTotalPrice // Send the new calculated total price
+          new_total_price: newTotalPrice
         }),
       })
 
@@ -202,6 +240,8 @@ export function UserDashboard() {
         setUserNotes("")
         setAdditionalServices({})
         setExistingServices([])
+      } else if (response.status === 401) {
+        window.location.href = "/login"
       }
     } catch (error) {
       console.error("Error updating quote:", error)
@@ -231,7 +271,7 @@ export function UserDashboard() {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="text-center">
-        <h1 className="font-serif font-bold text-3xl text-primary mb-2">Your Dashboard</h1>
+        <h1 className="font-serif font-bold text-3xl text-primary mb-2">Welcome back, {user.name}!</h1>
         <p className="text-muted-foreground">Manage your cleaning service quotes and bookings</p>
       </div>
 
@@ -281,14 +321,24 @@ export function UserDashboard() {
             {activeQuotes.map((quote) => (
               <div key={quote.id} className="relative">
                 <QuoteCard quote={quote} onUpdate={fetchQuotes} />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="absolute top-4 right-4"
-                  onClick={() => setEditingQuote(quote)}
-                >
-                  Edit Quote
-                </Button>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Button 
+                    asChild
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <Link href={`/dashboard/quotes/${quote.id}`}>
+                      View Details
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setEditingQuote(quote)}
+                  >
+                    Edit Quote
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -301,7 +351,19 @@ export function UserDashboard() {
           <h2 className="font-serif font-bold text-xl text-primary">Pending Review</h2>
           <div className="grid gap-6">
             {pendingQuotes.map((quote) => (
-              <QuoteCard key={quote.id} quote={quote} onUpdate={fetchQuotes} />
+              <div key={quote.id} className="relative">
+                <QuoteCard quote={quote} onUpdate={fetchQuotes} />
+                <Button 
+                  asChild
+                  variant="outline" 
+                  size="sm" 
+                  className="absolute top-4 right-4"
+                >
+                  <Link href={`/dashboard/quotes/${quote.id}`}>
+                    View Details
+                  </Link>
+                </Button>
+              </div>
             ))}
           </div>
         </div>
@@ -313,7 +375,19 @@ export function UserDashboard() {
           <h2 className="font-serif font-bold text-xl text-primary">Quote History</h2>
           <div className="grid gap-6">
             {completedQuotes.map((quote) => (
-              <QuoteCard key={quote.id} quote={quote} onUpdate={fetchQuotes} />
+              <div key={quote.id} className="relative">
+                <QuoteCard quote={quote} onUpdate={fetchQuotes} />
+                <Button 
+                  asChild
+                  variant="outline" 
+                  size="sm" 
+                  className="absolute top-4 right-4"
+                >
+                  <Link href={`/dashboard/quotes/${quote.id}`}>
+                    View Details
+                  </Link>
+                </Button>
+              </div>
             ))}
           </div>
         </div>
@@ -339,95 +413,95 @@ export function UserDashboard() {
 
       {/* Edit Quote Modal */}
       <Dialog open={!!editingQuote} onOpenChange={() => setEditingQuote(null)}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-    <DialogHeader>
-      <DialogTitle>Edit Quote #{editingQuote?.id.toString().padStart(6, "0")}</DialogTitle>
-      <DialogDescription>
-        Suggest changes to your cleaning service quote
-      </DialogDescription>
-    </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Quote #{editingQuote?.id.toString().padStart(6, "0")}</DialogTitle>
+            <DialogDescription>
+              Suggest changes to your cleaning service quote
+            </DialogDescription>
+          </DialogHeader>
 
-    {editingQuote && (
-      <div className="space-y-6">
-        {/* Original Quote Details */}
-        <div className="bg-muted p-4 rounded-lg">
-          <h3 className="font-semibold mb-2">Original Quote</h3>
-          <p>Base Price: ${editingQuote.base_price}</p>
-          <p>Total: ${editingQuote.total_price}</p>
-          {existingServices.length > 0 && (
-            <div className="mt-2">
-              <p className="font-medium">Current Services:</p>
-              {existingServices.map((service, index) => (
-                <p key={index} className="text-sm">
-                  - {getServiceName(service.service_type)}: ${service.price}
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Suggested Price */}
-        <div className="space-y-2">
-          <Label htmlFor="suggestedPrice">Your Suggested Total Price ($)</Label>
-          <Input
-            id="suggestedPrice"
-            type="number"
-            value={suggestedPrice}
-            onChange={(e) => setSuggestedPrice(e.target.value)}
-            placeholder="Enter your suggested total price"
-          />
-          <p className="text-sm text-muted-foreground">
-            Original total: ${editingQuote.total_price}
-          </p>
-        </div>
-
-        {/* Additional Services */}
-        <div className="space-y-2">
-          <Label>Adjust Additional Services</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries({
-              laundry: "Laundry (+$25)",
-              folding_clothes: "Folding Clothes (+$15)",
-              fridge_cleaning: "Fridge Cleaning (+$35)",
-              baseboard_cleaning: "Baseboard Cleaning (+$20)",
-              cabinet_cleaning: "Cabinet Cleaning (+$30)",
-              window_cleaning: "Window Cleaning (+$40)"
-            }).map(([serviceType, label]) => (
-              <div key={serviceType} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={additionalServices[serviceType] || false}
-                  onCheckedChange={(checked) => handleServiceToggle(serviceType, checked as boolean)}
-                />
-                <Label className="text-sm">{label}</Label>
+          {editingQuote && (
+            <div className="space-y-6">
+              {/* Original Quote Details */}
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Original Quote</h3>
+                <p>Base Price: ${editingQuote.base_price}</p>
+                <p>Total: ${editingQuote.total_price}</p>
+                {existingServices.length > 0 && (
+                  <div className="mt-2">
+                    <p className="font-medium">Current Services:</p>
+                    {existingServices.map((service, index) => (
+                      <p key={index} className="text-sm">
+                        - {getServiceName(service.service_type)}: ${service.price}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Real-time Calculation */}
-        <div className="bg-accent/5 p-4 rounded-lg">
-          <h4 className="font-semibold mb-2">Price Calculation</h4>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span>Base Cleaning:</span>
-              <span>${editingQuote.base_price}</span>
-            </div>
-            {Object.entries(additionalServices)
-              .filter(([_, isSelected]) => isSelected)
-              .map(([serviceType]) => (
-                <div key={serviceType} className="flex justify-between">
-                  <span>{getServiceName(serviceType)}:</span>
-                  <span>+${getServicePrice(serviceType)}</span>
+              {/* Suggested Price */}
+              <div className="space-y-2">
+                <Label htmlFor="suggestedPrice">Your Suggested Total Price ($)</Label>
+                <Input
+                  id="suggestedPrice"
+                  type="number"
+                  value={suggestedPrice}
+                  onChange={(e) => setSuggestedPrice(e.target.value)}
+                  placeholder="Enter your suggested total price"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Original total: ${editingQuote.total_price}
+                </p>
+              </div>
+
+              {/* Additional Services */}
+              <div className="space-y-2">
+                <Label>Adjust Additional Services</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries({
+                    laundry: "Laundry (+$25)",
+                    folding_clothes: "Folding Clothes (+$15)",
+                    fridge_cleaning: "Fridge Cleaning (+$35)",
+                    baseboard_cleaning: "Baseboard Cleaning (+$20)",
+                    cabinet_cleaning: "Cabinet Cleaning (+$30)",
+                    window_cleaning: "Window Cleaning (+$40)"
+                  }).map(([serviceType, label]) => (
+                    <div key={serviceType} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={additionalServices[serviceType] || false}
+                        onCheckedChange={(checked) => handleServiceToggle(serviceType, checked as boolean)}
+                      />
+                      <Label className="text-sm">{label}</Label>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            <div className="border-t pt-1 mt-1 flex justify-between font-semibold">
-              <span>Calculated Total:</span>
-              <span>${calculateTotalPrice()}</span>
-            </div>
-          </div>
-        </div>
+              </div>
 
-       {/* Actions */}
+              {/* Real-time Calculation */}
+              <div className="bg-accent/5 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Price Calculation</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Base Cleaning:</span>
+                    <span>${editingQuote.base_price}</span>
+                  </div>
+                  {Object.entries(additionalServices)
+                    .filter(([_, isSelected]) => isSelected)
+                    .map(([serviceType]) => (
+                      <div key={serviceType} className="flex justify-between">
+                        <span>{getServiceName(serviceType)}:</span>
+                        <span>+${getServicePrice(serviceType)}</span>
+                      </div>
+                    ))}
+                  <div className="border-t pt-1 mt-1 flex justify-between font-semibold">
+                    <span>Calculated Total:</span>
+                    <span>${calculateTotalPrice()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
@@ -444,11 +518,10 @@ export function UserDashboard() {
                   {isSubmitting ? "Submitting..." : "Submit Changes"}
                 </Button>
               </div>
-        {/* ... (rest of your modal) */}
-      </div>
-    )}
-  </DialogContent>
-</Dialog>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
