@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,22 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ArrowLeft, Image as ImageIcon, X, ChevronLeft, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface AdditionalService {
   service_type: string
   price: number
-}
-
-interface QuoteImage {
-  id: number
-  image_url: string
-  image_name: string
-  image_size: number
-  uploaded_at: string
 }
 
 interface Quote {
@@ -61,18 +52,72 @@ interface QuoteDetailsProps {
 }
 
 export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
-  const router = useRouter()
   const [quote, setQuote] = useState<Quote | null>(null)
-  const [images, setImages] = useState<QuoteImage[]>([])
   const [loading, setLoading] = useState(true)
   const [basePrice, setBasePrice] = useState("")
   const [adminNotes, setAdminNotes] = useState("")
   const [additionalServices, setAdditionalServices] = useState<{ [key: string]: boolean }>({})
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [schedulingModalOpen, setSchedulingModalOpen] = useState(false)
   const [selectedScheduleDate, setSelectedScheduleDate] = useState("")
   const [selectedScheduleTime, setSelectedScheduleTime] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
 
+  // clenaer variable to hold available cleaners
+  const [availableCleaners, setAvailableCleaners] = useState<any[]>([])
+  const [selectedCleaner, setSelectedCleaner] = useState("")
+  const [assignmentAmount, setAssignmentAmount] = useState("")
+
+
+
+
+
+
+  const fetchAvailableCleaners = async () => {
+    try {
+      const response = await fetch("/api/admin/cleaners?status=approved")
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableCleaners(data.cleaners)
+      }
+    } catch (error) {
+      console.error("Error fetching cleaners:", error)
+    }
+  }
+
+  const handleAssignCleaner = async () => {
+    if (!quote || !selectedCleaner || !assignmentAmount) return
+
+    try {
+      const response = await fetch("/api/admin/cleaner-assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quote_request_id: quote.id,
+          cleaner_id: parseInt(selectedCleaner),
+          assigned_by: 1, // This should come from admin session
+          payment_amount: parseFloat(assignmentAmount)
+        })
+      })
+
+      if (response.ok) {
+        alert("Cleaner assigned successfully!")
+        setSelectedCleaner("")
+        setAssignmentAmount("")
+        await fetchQuoteDetails() // Refresh quote data
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to assign cleaner")
+      }
+    } catch (error) {
+      console.error("Error assigning cleaner:", error)
+      alert("Failed to assign cleaner")
+    }
+  }
+
+
+
+  // Fetch quote details
   const fetchQuoteDetails = async () => {
     try {
       const response = await fetch(`/api/admin/quotes/${quoteId}`)
@@ -81,14 +126,12 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
         setQuote(data.quote)
         setBasePrice(data.quote.base_price?.toString() || data.quote.proposed_price?.toString() || "")
         setAdminNotes(data.quote.admin_notes || "")
-        
+
+        // Initialize additional services
         const initialServices: { [key: string]: boolean } = {}
         if (data.quote.additional_services) {
-          const services = Array.isArray(data.quote.additional_services) 
-            ? data.quote.additional_services 
-            : parseAdditionalServices(data.quote.additional_services)
-          
-          services.forEach((service: AdditionalService) => {
+          const services = parseAdditionalServices(data.quote.additional_services)
+          services.forEach(service => {
             initialServices[service.service_type] = true
           })
         }
@@ -101,22 +144,16 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
     }
   }
 
-  const fetchQuoteImages = async () => {
-    try {
-      const response = await fetch(`/api/admin/quotes/${quoteId}/images`)
-      if (response.ok) {
-        const data = await response.json()
-        setImages(data.images || [])
-      }
-    } catch (error) {
-      console.error("Error fetching quote images:", error)
-    }
-  }
-
   useEffect(() => {
     fetchQuoteDetails()
-    fetchQuoteImages()
   }, [quoteId])
+
+   useEffect(() => {
+    if (quote?.status === 'paid' || quote?.status === 'scheduled') {
+      fetchAvailableCleaners()
+    }
+  }, [quote])
+
 
   const parseAdditionalServices = (services: any): AdditionalService[] => {
     if (Array.isArray(services)) return services
@@ -138,9 +175,10 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "quoted": return "bg-blue-100 text-blue-800 border-blue-200"
       case "accepted": return "bg-green-100 text-green-800 border-green-200"
+      case "paid": return "bg-purple-100 text-purple-800 border-purple-200"
       case "declined": return "bg-red-100 text-red-800 border-red-200"
       case "completed": return "bg-gray-100 text-gray-800 border-gray-200"
-      case "scheduled": return "bg-purple-100 text-purple-800 border-purple-200"
+      case "scheduled": return "bg-indigo-100 text-indigo-800 border-indigo-200"
       default: return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
@@ -163,12 +201,12 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
 
   const getServicePrice = (serviceType: string): number => {
     const servicePrices: { [key: string]: number } = {
-      laundry: 25,
-      folding_clothes: 15,
-      fridge_cleaning: 35,
-      baseboard_cleaning: 20,
-      cabinet_cleaning: 30,
-      window_cleaning: 40
+      laundry: 0,
+      folding_clothes: 0,
+      fridge_cleaning: 0,
+      baseboard_cleaning: 0,
+      cabinet_cleaning: 0,
+      window_cleaning: 0
     }
     return servicePrices[serviceType] || 0
   }
@@ -185,11 +223,39 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
     return serviceNames[serviceType] || serviceType.replace('_', ' ')
   }
 
-  const isQuoteScheduled = quote?.status === "scheduled"
+  // ADD THIS FUNCTION: Handle marking quote as paid
+  const handleMarkAsPaid = async () => {
+    if (!quote) return
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/admin/quotes/${quote.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "paid",
+        }),
+      })
+
+      if (response.ok) {
+        await fetchQuoteDetails() // Refresh the quote data
+        router.refresh() // Refresh the page
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to mark as paid")
+      }
+    } catch (error) {
+      console.error("Error marking quote as paid:", error)
+      alert("Failed to mark quote as paid")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleSubmitQuote = async () => {
-    if (!quote || isQuoteScheduled) return
+    if (!quote) return
 
+    setIsSubmitting(true)
     const totalPrice = calculateTotalPrice()
     const selectedServices = Object.entries(additionalServices)
       .filter(([_, isSelected]) => isSelected)
@@ -213,12 +279,15 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       }
     } catch (error) {
       console.error("Error updating quote:", error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleSaveNotes = async () => {
-    if (!quote || isQuoteScheduled) return
+    if (!quote) return
 
+    setIsSubmitting(true)
     try {
       const response = await fetch(`/api/admin/quotes/${quote.id}`, {
         method: "PATCH",
@@ -233,12 +302,15 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       if (response.ok) await fetchQuoteDetails()
     } catch (error) {
       console.error("Error saving notes:", error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleAcceptQuote = async () => {
-    if (!quote || isQuoteScheduled) return
+    if (!quote) return
 
+    setIsSubmitting(true)
     try {
       const response = await fetch(`/api/admin/quotes/${quote.id}`, {
         method: "PATCH",
@@ -254,12 +326,15 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       }
     } catch (error) {
       console.error("Error accepting quote:", error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleScheduleBooking = async () => {
     if (!quote || !selectedScheduleDate || !selectedScheduleTime) return
 
+    setIsSubmitting(true)
     try {
       const response = await fetch(`/api/admin/bookings`, {
         method: "POST",
@@ -272,15 +347,6 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       })
 
       if (response.ok) {
-        // Update quote status to scheduled
-        await fetch(`/api/admin/quotes/${quote.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "scheduled",
-          }),
-        })
-        
         await fetchQuoteDetails()
         setSchedulingModalOpen(false)
         setSelectedScheduleDate("")
@@ -288,40 +354,37 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       }
     } catch (error) {
       console.error("Error scheduling booking:", error)
-    }
-  }
-
-  const nextImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex < images.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1)
-    }
-  }
-
-  const prevImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   if (loading) {
-    return <div className="animate-pulse space-y-4">Loading quote details...</div>
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center mb-4 mx-auto animate-pulse">
+            <span className="text-accent-foreground font-bold text-lg">O</span>
+          </div>
+          <p className="text-muted-foreground">Loading quote details...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!quote) {
-    return <div className="text-center py-8">Quote not found</div>
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Quote not found</p>
+      </div>
+    )
   }
+
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.push("/admin/quotes")}
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif font-bold text-3xl text-primary">
             Quote #{quote.id.toString().padStart(6, "0")}
@@ -330,7 +393,7 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
             Customer: {quote.user_name} ({quote.user_email})
           </p>
         </div>
-        <Badge className={`ml-auto ${getStatusColor(quote.status)}`}>
+        <Badge className={getStatusColor(quote.status)}>
           {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
         </Badge>
       </div>
@@ -338,102 +401,70 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Quote Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Property Details Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Property Details</CardTitle>
+              <CardTitle>Service Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><Label>Property Type</Label><p className="font-medium capitalize">{quote.property_type}</p></div>
                 <div><Label>Cleaning Type</Label><p className="font-medium capitalize">{quote.cleaning_type.replace("_", " ")}</p></div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div><Label>Bedrooms</Label><p className="font-medium">{quote.bedrooms}</p></div>
                 <div><Label>Bathrooms</Label><p className="font-medium">{quote.bathrooms}</p></div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div><Label>Square Footage</Label><p className="font-medium">{quote.square_footage || "N/A"}</p></div>
                 <div><Label>Cleaning Frequency</Label><p className="font-medium">{quote.cleaning_frequency || "N/A"}</p></div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div><Label>Pets in Home</Label><p className="font-medium">{quote.has_pets ? "Yes" : "No"}</p></div>
-                <div><Label>Desired Date</Label><p className="font-medium">{quote.desired_date ? new Date(quote.desired_date).toLocaleDateString() : "N/A"}</p></div>
+                <div><Label>Requested Date</Label><p className="font-medium">{quote.desired_date ? new Date(quote.desired_date).toLocaleDateString() : "N/A"}</p></div>
               </div>
 
               <div>
                 <Label>Special Instructions</Label>
-                <p className="font-medium mt-1 p-3 bg-muted rounded-md">{quote.special_instructions || "None"}</p>
+                <p className="font-medium mt-1 p-3 bg-muted rounded-md">
+                  {quote.special_instructions || "None"}
+                </p>
               </div>
 
-              {/* Preferred Dates */}
-              {(quote.desired_date1 || quote.desired_date2 || quote.desired_date3) && (
-                <div>
-                  <Label>Preferred Dates</Label>
-                  <div className="space-y-1 mt-1">
-                    {quote.desired_date1 && (
-                      <p className="font-medium">• {new Date(quote.desired_date1).toLocaleDateString()}</p>
-                    )}
-                    {quote.desired_date2 && (
-                      <p className="font-medium">• {new Date(quote.desired_date2).toLocaleDateString()}</p>
-                    )}
-                    {quote.desired_date3 && (
-                      <p className="font-medium">• {new Date(quote.desired_date3).toLocaleDateString()}</p>
-                    )}
-                  </div>
+              <div>
+                <Label>Available Dates</Label>
+                <div className="mt-2 space-y-1">
+                  {quote.desired_date1 && (
+                    <p className="text-sm">• {new Date(quote.desired_date1).toLocaleDateString()}</p>
+                  )}
+                  {quote.desired_date2 && (
+                    <p className="text-sm">• {new Date(quote.desired_date2).toLocaleDateString()}</p>
+                  )}
+                  {quote.desired_date3 && (
+                    <p className="text-sm">• {new Date(quote.desired_date3).toLocaleDateString()}</p>
+                  )}
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Customer Images Card */}
-          {images.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Images</CardTitle>
-                <CardDescription>Images uploaded by the customer</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {images.map((image, index) => (
-                    <div 
-                      key={image.id} 
-                      className="cursor-pointer group relative"
-                      onClick={() => setSelectedImageIndex(index)}
-                    >
-                      <div className="aspect-square relative rounded-md overflow-hidden bg-muted">
-                        <img
-                          src={image.image_url}
-                          alt={image.image_name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate mt-1">
-                        {image.image_name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Admin Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                rows={4}
+                placeholder="Add internal notes about this quote..."
+              />
+              <Button onClick={handleSaveNotes} className="mt-4" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Notes"}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Pricing & Actions */}
         <div className="space-y-6">
-          {/* Pricing Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Pricing & Actions</CardTitle>
-              {isQuoteScheduled && (
-                <CardDescription className="text-red-600 font-semibold">
-                  This quote has been scheduled and cannot be modified.
-                </CardDescription>
-              )}
+              <CardTitle>Pricing</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -444,7 +475,6 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
                   value={basePrice}
                   onChange={(e) => setBasePrice(e.target.value)}
                   placeholder="Enter base price"
-                  disabled={isQuoteScheduled}
                 />
               </div>
 
@@ -452,18 +482,17 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
                 <Label>Additional Services</Label>
                 <div className="space-y-2">
                   {Object.entries({
-                    laundry: "Laundry (+$25)",
-                    folding_clothes: "Folding Clothes (+$15)",
-                    fridge_cleaning: "Fridge Cleaning (+$35)",
-                    baseboard_cleaning: "Baseboard Cleaning (+$20)",
-                    cabinet_cleaning: "Cabinet Cleaning (+$30)",
-                    window_cleaning: "Window Cleaning (+$40)"
+                    laundry: "Laundry",
+                    folding_clothes: "Folding Clothes",
+                    fridge_cleaning: "Fridge Cleaning",
+                    baseboard_cleaning: "Baseboard Cleaning",
+                    cabinet_cleaning: "Cabinet Cleaning",
+                    window_cleaning: "Window Cleaning"
                   }).map(([serviceType, label]) => (
                     <div key={serviceType} className="flex items-center space-x-2">
                       <Checkbox
                         checked={additionalServices[serviceType] || false}
                         onCheckedChange={(checked) => handleServiceToggle(serviceType, checked as boolean)}
-                        disabled={isQuoteScheduled}
                       />
                       <Label className="text-sm">{label}</Label>
                     </div>
@@ -481,121 +510,141 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
               {quote.suggested_price && (
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center">
-                    <Label className="text-lg">Suggested Price</Label>
-                    <span className="text-2xl font-bold text-accent">${quote.suggested_price}</span>
+                    <Label className="text-lg">Customer Suggested Price</Label>
+                    <span className="text-xl font-bold text-blue-600">${quote.suggested_price}</span>
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="adminNotes">Admin Notes</Label>
-                <Textarea
-                  id="adminNotes"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Add internal notes..."
-                  disabled={isQuoteScheduled}
-                />
-              </div>
+          {/* Actions Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
 
-              {!isQuoteScheduled && (
-                <div className="flex flex-col gap-2 pt-4">
-                  <Button onClick={handleSaveNotes} variant="outline">
-                    Save Notes
-                  </Button>
-                  {quote.status === "quoted" && (
-                    <Button onClick={handleAcceptQuote} className="bg-green-600 hover:bg-green-700">
-                      Accept Quote
-                    </Button>
-                  )}
-                  <Button onClick={handleSubmitQuote} className="bg-accent">
-                    Submit Quote
+              {(quote?.status === 'paid' || quote?.status === 'scheduled') && (
+                <div className="space-y-3 border-t pt-4">
+                  <h4 className="font-semibold">Assign to Cleaner</h4>
+
+                  <div className="space-y-2">
+                    <Label>Select Cleaner</Label>
+                    <Select value={selectedCleaner} onValueChange={setSelectedCleaner}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a cleaner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCleaners.map((cleaner) => (
+                          <SelectItem key={cleaner.id} value={cleaner.id.toString()}>
+                            {cleaner.business_name} - {cleaner.user_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Payment Amount ($)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={assignmentAmount}
+                      onChange={(e) => setAssignmentAmount(e.target.value)}
+                      placeholder="Enter payment amount"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleAssignCleaner}
+                    disabled={!selectedCleaner || !assignmentAmount}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Assign Cleaner
                   </Button>
                 </div>
               )}
 
-              {quote.status === "accepted" && !isQuoteScheduled && (
-                <Button 
-                  onClick={() => setSchedulingModalOpen(true)}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+              {quote.status === "quoted" || quote.status === "pending" && (
+                <Button
+                  onClick={handleSubmitQuote}
+                  className="w-full bg-accent"
+                  disabled={isSubmitting}
                 >
-                  Schedule Booking
+                  {isSubmitting ? "Submitting..." : "Submit Quote"}
                 </Button>
               )}
+
+
+              {quote.status === "quoted" && (
+                <Button
+                  onClick={handleSubmitQuote}
+                  className="w-full bg-accent"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Quote"}
+                </Button>
+              )}
+
+
+
+              {quote.status === "quoted" && (
+                <Button
+                  onClick={handleAcceptQuote}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Accepting..." : "Accept Quote"}
+                </Button>
+              )}
+
+              {/* ADD THIS BUTTON: Mark as Paid */}
+              {quote.status === "accepted" && (
+                <Button
+                  onClick={handleMarkAsPaid}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Processing..." : "Mark as Paid"}
+                </Button>
+              )}
+
+              {(quote.status === "accepted" || quote.status === "paid") && (
+                <Button
+                  onClick={() => setSchedulingModalOpen(true)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Schedule Cleaning
+                </Button>
+              )}
+
+              <Button variant="outline" className="w-full" asChild>
+                <a href={`mailto:${quote.user_email}?subject=Quote #${quote.id.toString().padStart(6, "0")}`}>
+                  Email Customer
+                </a>
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Image Viewer Dialog */}
-      <Dialog open={selectedImageIndex !== null} onOpenChange={() => setSelectedImageIndex(null)}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <div className="relative h-full flex items-center justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10"
-              onClick={() => setSelectedImageIndex(null)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-            
-            {selectedImageIndex !== null && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="absolute left-2 z-10"
-                  onClick={prevImage}
-                  disabled={selectedImageIndex === 0}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                
-                <div className="h-full flex items-center justify-center">
-                  <img
-                    src={images[selectedImageIndex].image_url}
-                    alt={images[selectedImageIndex].image_name}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-                
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="absolute right-2 z-10"
-                  onClick={nextImage}
-                  disabled={selectedImageIndex === images.length - 1}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                  {selectedImageIndex + 1} / {images.length}
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Scheduling Modal */}
       <Dialog open={schedulingModalOpen} onOpenChange={setSchedulingModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Schedule Booking</DialogTitle>
+            <DialogTitle>Schedule Cleaning</DialogTitle>
             <DialogDescription>
-              Select a date and time for the cleaning service
+              Schedule a cleaning date for {quote.user_name}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Available Dates</Label>
+              <Label>Select Date</Label>
               <Select onValueChange={setSelectedScheduleDate}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a date" />
+                  <SelectValue placeholder="Choose a date" />
                 </SelectTrigger>
                 <SelectContent>
                   {quote.desired_date1 && (
@@ -621,7 +670,7 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
               <Label>Select Time</Label>
               <Select onValueChange={setSelectedScheduleTime}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a time" />
+                  <SelectValue placeholder="Choose a time" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="09:00">9:00 AM</SelectItem>
@@ -636,12 +685,12 @@ export function QuoteDetails({ quoteId }: QuoteDetailsProps) {
               </Select>
             </div>
 
-            <Button 
+            <Button
               onClick={handleScheduleBooking}
-              disabled={!selectedScheduleDate || !selectedScheduleTime}
+              disabled={!selectedScheduleDate || !selectedScheduleTime || isSubmitting}
               className="w-full"
             >
-              Confirm Schedule
+              {isSubmitting ? "Scheduling..." : "Confirm Schedule"}
             </Button>
           </div>
         </DialogContent>

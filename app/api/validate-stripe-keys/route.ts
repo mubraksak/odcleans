@@ -34,7 +34,7 @@ export async function GET() {
 
     // Test the keys by making a simple Stripe request
     try {
-      const stripe = new Stripe(secretKey, { apiVersion: "2024-04-10" as any });
+      const stripe = new Stripe(secretKey, { apiVersion: "2025-09-30.clover" as any });
       await stripe.balance.retrieve(); // Simple API call to test the key
       
       result.isValid = true;

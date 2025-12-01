@@ -34,3 +34,29 @@ export async function getCurrentUser(request: NextRequest) {
 }
 
 
+
+export async function verifyCleanerSession(sessionToken: string) {
+  try {
+    if (!sessionToken) {
+      return null
+    }
+
+    const users = (await query(
+      `SELECT u.*, c.*, c.id as cleaner_id 
+       FROM users u 
+       JOIN cleaners c ON u.id = c.user_id 
+       WHERE u.session_token = ? 
+       AND u.role = 'cleaner' 
+       AND u.session_expires > NOW() 
+       AND c.status = 'approved'`,
+      [sessionToken]
+    )) as any[]
+    
+    return users[0] || null
+  } catch (error) {
+    console.error("Session verification error:", error)
+    return null
+  }
+}
+
+

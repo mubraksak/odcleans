@@ -903,6 +903,18 @@ async sendPaymentReceivedAdmin(quoteId: number, customerName: string, customerEm
 }
 
 
+async sendCleanerJobRequestNotification(quoteId: number, customerName: string, cleanerName: string)  {
+    // Implementation for notifying admin about cleaner job request
+  }
+
+ async sendCleanerAssignmentDecisionNotification  (quoteId: number, customerName: string, cleanerName: string, decision: string) {
+    // Implementation for notifying admin about cleaner's decision
+  }
+
+ async sendCleanerReceipt  (cleanerEmail: string, cleanerName: string, assignmentId: number, amount: number, jobDetails: any) {
+    // Implementation for sending receipt to cleaner
+  }
+
 }
 
 

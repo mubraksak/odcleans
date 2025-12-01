@@ -248,12 +248,12 @@ async function calculateQuotePrice(quoteId: number): Promise<number> {
 
     const quote = quoteData[0];
     
-    let basePrice = quote.base_price;
-    basePrice += (quote.bedrooms * quote.price_per_bedroom);
-    basePrice += (quote.bathrooms * quote.price_per_bathroom);
-    basePrice += ((quote.square_footage || 0) * quote.price_per_sqft);
+    let basePrice = 0;
+    // basePrice += (quote.bedrooms * quote.price_per_bedroom);
+    // basePrice += (quote.bathrooms * quote.price_per_bathroom);
+    // basePrice += ((quote.square_footage || 0) * quote.price_per_sqft);
 
-    basePrice = Math.max(quote.min_price, Math.min(quote.max_price, basePrice));
+    // basePrice = Math.max(quote.min_price, Math.min(quote.max_price, basePrice));
 
     const additionalServices = (await query(
       `SELECT SUM(asp.base_price) as total

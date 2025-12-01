@@ -197,6 +197,7 @@ export function TransactionsTable() {
                     <TableCell>
                       <div className="font-medium">
                         ${transaction.amount}
+                        {/* .toFixed(2) */}
                         <span className="text-sm text-muted-foreground ml-1">{transaction.currency.toUpperCase()}</span>
                       </div>
                     </TableCell>
@@ -303,6 +304,7 @@ export function TransactionsTable() {
                       <span>Amount:</span>
                       <span className="font-semibold">
                         ${selectedTransaction.amount} {selectedTransaction.currency.toUpperCase()}
+                      {/* .toFixed(2) */}
                       </span>
                     </div>
                   </div>
@@ -341,7 +343,8 @@ export function TransactionsTable() {
                 <div className="flex justify-between items-center text-lg font-semibold">
                   <span>Total Amount:</span>
                   <span className="text-2xl text-accent">
-                    ${selectedTransaction.amount.toFixed(2)}
+                    ${selectedTransaction.amount}
+                    {/* .toFixed(2) */}
                   </span>
                 </div>
               </div>

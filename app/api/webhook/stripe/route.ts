@@ -5,46 +5,41 @@ import { query } from "@/lib/database"
 import { emailService } from "@/lib/email-service"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-04-10" as any,
+  apiVersion: "2025-09-30.clover" as any ,
 })
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 export async function POST(request: Request) {
-
-
-
-
-
   const body = await request.text()
   const headersList = await headers()
   const signature = headersList.get("stripe-signature")
 
+  console.log("🔔 Webhook received - Headers:", {
+    signature: signature ? `${signature.substring(0, 20)}...` : 'missing',
+    contentType: headersList.get("content-type")
+  })
+
   if (!signature) {
+    console.error("❌ No Stripe signature found")
     return NextResponse.json({ error: "No signature" }, { status: 400 })
   }
 
   let event: Stripe.Event
 
-
-
-  // Add at the beginning of the POST function
-
-
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    console.log("✅ Webhook signature verified:", event.type)
   } catch (err) {
     console.error("❌ Webhook signature verification failed:", err)
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
 
-
-  console.log("🔔 Webhook received:", {
-  type: event.type,
-  id: event.id,
-  livemode: event.livemode
-})
-
+  console.log("🔔 Processing webhook event:", {
+    type: event.type,
+    id: event.id,
+    livemode: event.livemode
+  })
 
   try {
     switch (event.type) {
@@ -57,7 +52,7 @@ export async function POST(request: Request) {
         break
       
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        console.log(`➡️ Unhandled event type: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
@@ -68,7 +63,11 @@ export async function POST(request: Request) {
 }
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  console.log("💰 Payment succeeded:", paymentIntent.id)
+  console.log("💰 Payment succeeded webhook:", {
+    id: paymentIntent.id,
+    amount: paymentIntent.amount,
+    metadata: paymentIntent.metadata
+  })
   
   const quoteId = paymentIntent.metadata.quote_id
   const customerEmail = paymentIntent.metadata.customer_email
@@ -79,13 +78,26 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     return
   }
 
+  // Check if transaction already exists to avoid duplicates
+  const existingTransactions = await query(
+    "SELECT id FROM transactions WHERE stripe_payment_intent_id = ?",
+    [paymentIntent.id]
+  ) as any[]
+
+  if (existingTransactions.length > 0) {
+    console.log("⚠️ Transaction already exists, skipping...")
+    return
+  }
+
   try {
-    // Remove transaction - execute queries individually
+    console.log("🔄 Processing payment success for quote:", quoteId)
+
     // 1. Update quote status to 'paid'
     await query(
       "UPDATE quote_requests SET status = 'paid', updated_at = NOW() WHERE id = ?",
       [quoteId]
     )
+    console.log("✅ Quote status updated to paid")
 
     // 2. Record transaction in database
     await query(
@@ -108,17 +120,18 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
         customerName
       ]
     )
+    console.log("✅ Transaction recorded in database")
 
     // 3. Update booking status if exists
     await query(
       "UPDATE bookings SET status = 'confirmed' WHERE quote_request_id = ?",
       [quoteId]
     )
-
-    console.log("✅ Quote status updated and transaction recorded")
+    console.log("✅ Booking status updated to confirmed")
 
     // 4. Send receipt email to customer
     try {
+      console.log("📧 Attempting to send customer receipt email...")
       await emailService.sendPaymentReceipt(
         Number(quoteId),
         customerName,
@@ -133,6 +146,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 
     // 5. Send notification to admin
     try {
+      console.log("📧 Attempting to send admin notification...")
       await emailService.sendPaymentReceivedAdmin(
         Number(quoteId),
         customerName,
@@ -146,7 +160,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     }
 
   } catch (error) {
-    console.error("❌ Error updating quote and recording transaction:", error)
+    console.error("❌ Error processing payment success:", error)
   }
 }
 

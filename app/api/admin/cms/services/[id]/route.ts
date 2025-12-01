@@ -4,7 +4,7 @@ import { query } from "@/lib/database"
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { name, description, displayOrder, isActive } = await request.json()
-    const serviceId = params.id
+   const serviceId = params.id
 
     await query(
       "UPDATE services SET name = ?, description = ?, display_order = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",

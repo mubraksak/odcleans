@@ -25,3 +25,32 @@ export async function getAdminSession() {
     return null
   }
 }
+
+
+export async function verifyCleanerSession(sessionToken: string) {
+  try {
+    if (!sessionToken) {
+      return null
+    }
+
+    console.log("🔐 Verifying session token:", sessionToken.substring(0, 10) + "...")
+
+    const users = (await query(
+      `SELECT u.*, c.*, c.id as cleaner_id 
+       FROM users u 
+       JOIN cleaners c ON u.id = c.user_id 
+       WHERE u.session_token = ? 
+       AND u.role = 'cleaner' 
+       AND (u.session_expires > NOW() OR u.session_expires IS NULL)
+       AND c.status = 'approved'`,
+      [sessionToken]
+    )) as any[]
+    
+    console.log("📊 Session verification result:", users.length > 0 ? "VALID" : "INVALID")
+    
+    return users[0] || null
+  } catch (error) {
+    console.error("❌ Session verification error:", error)
+    return null
+  }
+}

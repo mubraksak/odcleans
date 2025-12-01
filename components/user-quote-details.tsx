@@ -20,7 +20,7 @@ interface QuoteImage {
 
 interface Quote {
   id: number
-  propertyType: string
+  property_type: string
   bedrooms: number
   bathrooms: number
   cleaningType: string
@@ -223,7 +223,7 @@ useEffect(() => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><strong>Property Type:</strong> {quote.propertyType}</div>
+                <div><strong>Property Type:</strong> {quote.property_type}</div>
                 <div><strong>Cleaning Type:</strong> {quote.cleaning_type?.replace("_", " ") || quote.cleaningType}</div>
               </div>
 

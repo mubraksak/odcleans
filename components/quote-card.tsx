@@ -23,7 +23,7 @@ interface Quote {
  
   //pets: string
   id: number
-  propertyType: string
+  property_type: string
   bedrooms: number
   bathrooms: number
   cleaning_type: string
@@ -38,6 +38,7 @@ interface Quote {
   scheduled_date: string | number | Date
   bookingStatus?: string
   admin_notes?: string
+  service_type?: string
   additional_service_types?: string
   additional_services?: AdditionalService[] | string // Can be array or string (for parsing)
   square_footage: string
@@ -117,6 +118,18 @@ export function QuoteCard({ quote, onUpdate, onEdit, showActions = true  }: Quot
         return "Deep Cleaning"
       case "post_construction":
         return "Post-Construction"
+      default:
+        return type
+    }
+  }
+
+
+  const getPropertyTypeDisplay = (type: string) => {
+    switch (type) {
+      case "residential":
+        return "🏠 Residential"
+      case "commercial":
+        return "🏢 Commercial"
       default:
         return type
     }
@@ -228,11 +241,11 @@ const handleAccept = async () => {
 
 
   function handlePaymentSuccess(paymentIntentId: string): void {
-    // Payment was successful, update UI and refetch quotes if needed
+    // Payment was successful, update UI and refetch quotes if needed. 
     setShowPayment(false)
     alert("Payment successful! Your booking is confirmed.")
     onUpdate()
-    // Optionally, you can log or handle the paymentIntentId for further processing
+    // Optionally, you can log or handle the paymentIntentId for further processing. 
     console.log("PaymentIntent ID:", paymentIntentId)
   }
   return (
@@ -242,7 +255,7 @@ const handleAccept = async () => {
           <div>
             <CardTitle className="text-lg text-primary">Quote #{quote.id.toString().padStart(6, "0")}</CardTitle>
             <CardDescription>
-              <h1 className="text-lg font-bold text-dark"> service Type :{getCleaningTypeDisplay(quote.cleaning_type)} for {quote.propertyType === "Residencial" ? "🏠 Residencial" : "🏢 Commercial"}  Building</h1>
+              <h1 className="text-lg font-bold text-dark"> service Type :{getCleaningTypeDisplay(quote.cleaning_type)} for {getPropertyTypeDisplay(quote.service_type || "residential")}  Building</h1>
             </CardDescription>
           </div>
           <Badge className={getStatusColor(quote.status)}>
@@ -318,19 +331,19 @@ const handleAccept = async () => {
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <p className="text-muted-foreground text-sm">Desired Date 1</p>
+          <p className="text-muted-foreground text-sm">Prefferd Desired Date </p>
           <p className="font-semibold">
             {quote.desired_date1 ? new Date(quote.desired_date1).toLocaleDateString() : 'Not specified'}
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">Desired Date 2</p>
+          <p className="text-muted-foreground text-sm">Second Desired Date  </p>
           <p className="font-semibold">
             {quote.desired_date2 ? new Date(quote.desired_date2).toLocaleDateString() : 'Not specified'}
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">Desired Date 3</p>
+          <p className="text-muted-foreground text-sm">Third Desired Date </p>
           <p className="font-semibold">
             {quote.desired_date3 ? new Date(quote.desired_date3).toLocaleDateString() : 'Not specified'}
           </p>
@@ -341,10 +354,10 @@ const handleAccept = async () => {
         <div>
           <p className="text-muted-foreground text-sm">Desired Time</p>
           <p className="font-semibold">
-            {new Date(quote.desired_date1).toLocaleTimeString([], {
+            {quote.desired_date1 ? new Date(quote.desired_date1).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit'
-            })}
+            }) : 'Not specified'}
           </p>
         </div>
       )}

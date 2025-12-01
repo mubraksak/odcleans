@@ -21,7 +21,7 @@ function initializeStripe() {
   // Initialize Stripe with error handling
   try {
     const stripe = new Stripe(secretKey, {
-      apiVersion: "2024-04-10" as any,
+      apiVersion: "2025-09-30.clover" as any,
     });
     return stripe;
   } catch (error) {

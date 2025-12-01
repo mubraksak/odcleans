@@ -72,6 +72,35 @@ export default function PaymentSuccessPage() {
       } finally {
         setIsUpdating(false)
       }
+
+
+      try {
+          console.log("📧 Sending immediate payment emails...")
+          
+          // Send customer receipt
+          const emailResponse = await fetch('/api/send-payment-emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              quoteId: Number(quoteId),
+              customerEmail: customerEmail,
+              customerName: customerName,
+              amount: amount ? parseFloat(amount) : null,
+              paymentIntentId: payment_intent,
+              action: 'payment_success'
+            }),
+          })
+
+          if (emailResponse.ok) {
+            console.log("✅ Immediate emails sent successfully")
+          } else {
+            console.error("❌ Failed to send immediate emails")
+          }
+        } catch (emailError) {
+          console.error("❌ Error sending immediate emails:", emailError)
+        }
     }
 
     // Only process if we have a quote ID

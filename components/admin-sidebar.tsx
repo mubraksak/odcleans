@@ -28,38 +28,48 @@ const navigation = [
     href: "/admin/schedule",
     icon: "📅",
   },
+  
   // Add this to your navigation items
-{
-  name: "Transactions",
-  href: "/admin/transactions",
-  icon: "💳",
-},
   {
-    name: "Service-managemet",
-    href: "/admin/service-management",
-    icon: "🧹",
+    name: "Transactions",
+    href: "/admin/transactions",
+    icon: "💳",
   },
   {
-    name: "Aditional Services",
-    href: "/admin/aditional-services",
-    icon: "🧼",
-  },
-  {
-    name: "CMS",
-    href: "/admin/cms",
-    icon: "✏️",
-  },
-]
+      href: "/admin/cleaner",
+      name: "Cleaners",
+      icon: "👥"
+    },
+    {
+      href: "/admin/assignments", 
+      name: "Assignments",
+      icon: "📋"
+    },
+    {
+      name: "Service-managemet",
+      href: "/admin/service-management",
+      icon: "⚙️",
+    },
+    {
+      name: "Aditional Services",
+      href: "/admin/aditional-services",
+      icon: "🧼",
+    },
+    {
+      name: "CMS",
+      href: "/admin/cms",
+      icon: "✏️",
+    },
+  ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const isScrollable = navigation.length * 48 > window.innerHeight - 200 // Approximate item height and header/footer space
 
   return (
-    <div
-      className={cn("bg-primary text-primary-foreground transition-all duration-300", isCollapsed ? "w-16" : "w-64")}
-    >
-      <div className="flex h-full flex-col">
+    <div className={cn("bg-primary text-primary-foreground transition-all duration-300", isCollapsed ? "w-16" : "w-64", isScrollable ? "overflow-y-auto" : "overflow-y-hidden")}>
+      <div className="flex h-full flex-col justify-between max-h-screen"> 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-primary-foreground/20">
           {!isCollapsed && (

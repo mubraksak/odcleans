@@ -54,7 +54,7 @@ export function QuotesTable() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null)
   const [schedulingQuote, setSchedulingQuote] = useState<Quote | null>(null)
-  const [quoteToSchedule, setQuoteToSchedule] = useState<Quote | null>(null) // New state for scheduling
+  const [quoteToSchedule, setQuoteToSchedule] = useState<Quote | null>(null)
   const [basePrice, setBasePrice] = useState("")
   const [adminNotes, setAdminNotes] = useState("")
   const [additionalServices, setAdditionalServices] = useState<{ [key: string]: boolean }>({})
@@ -120,8 +120,10 @@ export function QuotesTable() {
       case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "quoted": return "bg-blue-100 text-blue-800 border-blue-200"
       case "accepted": return "bg-green-100 text-green-800 border-green-200"
+      case "paid": return "bg-purple-100 text-purple-800 border-purple-200"
       case "declined": return "bg-red-100 text-red-800 border-red-200"
       case "completed": return "bg-gray-100 text-gray-800 border-gray-200"
+      case "scheduled": return "bg-indigo-100 text-indigo-800 border-indigo-200"
       default: return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
@@ -240,6 +242,29 @@ export function QuotesTable() {
     }
   }
 
+  // NEW: Function to mark quote as paid
+  const handleMarkAsPaid = async (quoteId: number) => {
+    try {
+      const response = await fetch(`/api/admin/quotes/${quoteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "paid",
+        }),
+      })
+
+      if (response.ok) {
+        await fetchQuotes()
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to mark as paid")
+      }
+    } catch (error) {
+      console.error("Error marking quote as paid:", error)
+      alert("Failed to mark quote as paid")
+    }
+  }
+
   const handleScheduleBooking = async () => {
     if (!quoteToSchedule || !selectedScheduleDate || !selectedScheduleTime) return;
 
@@ -296,6 +321,8 @@ export function QuotesTable() {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="quoted">Quoted</SelectItem>
                 <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
               </SelectContent>
             </Select>
@@ -345,14 +372,28 @@ export function QuotesTable() {
                             View Details
                           </Link>
                         </Button>
+                        
+                        {/* Show Mark as Paid button only for accepted quotes */}
                         {quote.status === "accepted" && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setQuoteToSchedule(quote)}
-                            className="bg-green-100 text-green-800 hover:bg-green-200"
+                            onClick={() => handleMarkAsPaid(quote.id)}
+                            className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200"
                           >
-                            Schedule Date
+                            Mark as Paid
+                          </Button>
+                        )}
+                        
+                        {/* Show Schedule button for accepted or paid quotes */}
+                        {(quote.status === "accepted" || quote.status === "paid") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setQuoteToSchedule(quote)}
+                            className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200"
+                          >
+                            Schedule
                           </Button>
                         )}
                       </div>
@@ -473,6 +514,17 @@ export function QuotesTable() {
                   <Button onClick={handleSaveNotes} variant="outline" className="flex-1">
                     Save Notes
                   </Button>
+                  
+                  {/* Show Mark as Paid button in dialog for accepted quotes */}
+                  {selectedQuote.status === "accepted" && (
+                    <Button 
+                      onClick={() => handleMarkAsPaid(selectedQuote.id)}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                    >
+                      Mark as Paid
+                    </Button>
+                  )}
+                  
                   {selectedQuote.status === "quoted" && (
                     <Button onClick={handleAcceptQuote} className="flex-1 bg-green-600 hover:bg-green-700">
                       Accept Quote

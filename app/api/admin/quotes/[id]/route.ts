@@ -50,20 +50,39 @@ export async function PATCH(
     const quoteId = parseInt(id)
     const body = await request.json()
 
-    // Check if quote is scheduled
+    // Check if quote exists
     const currentQuote = (await query(
       "SELECT status FROM quote_requests WHERE id = ?",
       [quoteId]
     )) as any[]
 
-    if (currentQuote.length > 0 && currentQuote[0].status === "scheduled") {
+    if (currentQuote.length === 0) {
+      return NextResponse.json(
+        { error: "Quote not found" },
+        { status: 404 }
+      )
+    }
+
+    const currentStatus = currentQuote[0].status
+
+    // NEW: Validate status transitions
+    const { status } = body
+    if (status === "paid" && currentStatus !== "accepted") {
+      return NextResponse.json(
+        { error: "Can only mark quotes as paid when status is 'accepted'" },
+        { status: 400 }
+      )
+    }
+
+    // Check if quote is scheduled (existing validation)
+    if (currentStatus === "scheduled") {
       return NextResponse.json(
         { error: "Cannot update a scheduled quote" },
         { status: 400 }
       )
     }
 
-    const { base_price, total_price, admin_notes, status, additional_services } = body
+    const { base_price, total_price, admin_notes, additional_services } = body
 
     const updateFields = []
     const updateParams = []
@@ -92,6 +111,22 @@ export async function PATCH(
         `UPDATE quote_requests SET ${updateFields.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         updateParams
       )
+
+      // NEW: If status is being updated to paid, you might want to create a transaction record
+      if (status === "paid") {
+        // Optional: Create a transaction record in your transactions table
+        // This would record the manual payment by admin
+        try {
+          await query(
+            `INSERT INTO transactions (quote_id, amount, payment_method, status, created_at) 
+             VALUES (?, ?, 'manual_admin', 'completed', CURRENT_TIMESTAMP)`,
+            [quoteId, total_price || base_price]
+          )
+        } catch (error) {
+          console.error("Error creating transaction record:", error)
+          // Don't fail the whole request if transaction recording fails
+        }
+      }
     }
 
     return NextResponse.json({ success: true })
