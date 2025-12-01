@@ -915,6 +915,71 @@ async sendCleanerJobRequestNotification(quoteId: number, customerName: string, c
     // Implementation for sending receipt to cleaner
   }
 
+
+// TODO
+
+  async sendCleanerAssignmentNotification (  cleanerEmail: string,  cleanerName: string,  quoteId: number,  customerName: string,  scheduledDate: string | null, paymentAmount: number,  cleaningType: string,  propertyType: string)  {
+    const subject = `New Cleaning Assignment - Quote #${quoteId}`
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">New Cleaning Assignment</h2>
+        <p>Hello ${cleanerName},</p>
+        <p>You have been assigned to a new cleaning job:</p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Quote ID:</strong> #${quoteId}</p>
+          <p><strong>Customer:</strong> ${customerName}</p>
+          <p><strong>Service Type:</strong> ${cleaningType} - ${propertyType}</p>
+          ${scheduledDate ? `<p><strong>Scheduled Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>` : ''}
+          <p><strong>Payment Amount:</strong> $${paymentAmount}</p>
+        </div>
+        <p>Please login to your dashboard to accept or reject this assignment.</p>
+        <a href="${process.env.NEXTAUTH_URL}/cleaner/dashboard" style="display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 15px;">
+          View Assignment
+        </a>
+      </div>
+    `
+    
+    // Implementation for sending email
+    console.log(`Sending assignment notification to ${cleanerEmail}`)
+    // Add your email sending logic here
+  }
+
+  async sendCleanerJobCompletedNotification(cleanerEmail: string, cleanerName: string, quoteId: number, customerName: string)  {
+    const subject = `Job Completed - Quote #${quoteId}`
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Job Marked as Completed</h2>
+        <p>Hello ${cleanerName},</p>
+        <p>Your cleaning job for ${customerName} (Quote #${quoteId}) has been marked as completed by the admin.</p>
+        <p>Payment will be processed according to your payment schedule.</p>
+        <p>Thank you for your excellent service!</p>
+      </div>
+    `
+    
+    console.log(`Sending job completion notification to ${cleanerEmail}`)
+    // Add your email sending logic here
+  }
+
+ async sendCleanerPaymentNotification( cleanerEmail: string, cleanerName: string, quoteId: number, paymentAmount: number)  {
+    const subject = `Payment Processed - Quote #${quoteId}`
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Payment Processed</h2>
+        <p>Hello ${cleanerName},</p>
+        <p>A payment of $${paymentAmount} for Quote #${quoteId} has been processed.</p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Payment Amount:</strong> $${paymentAmount}</p>
+          <p><strong>Payment Date:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Payment Status:</strong> Paid</p>
+        </div>
+        <p>Please check your account for the payment details.</p>
+      </div>
+    `
+    
+    console.log(`Sending payment notification to ${cleanerEmail}`)
+    // Add your email sending logic here
+  }
+
 }
 
 

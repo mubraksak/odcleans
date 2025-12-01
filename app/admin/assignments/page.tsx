@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { CleanersManagement } from "@/components/cleaners-management"
+import { AssignmentsManagement } from "@/components/assignments-management"
 
 export default async function AdminSchedulePage() {
   const cookieStore = await cookies()
@@ -20,7 +21,7 @@ export default async function AdminSchedulePage() {
             <h1 className="font-serif font-bold text-3xl text-primary">Cleaners Assignments </h1>
             <p className="text-muted-foreground">Manage cleaners and track cleaning progress</p>
           </div>
-                <p>Assignment management coming soon...</p>
+               <AssignmentsManagement />
         </div>
       </main>
     </div>

@@ -4,11 +4,11 @@ import { emailService } from "@/lib/email-service"
 
 export async function POST(request: NextRequest) {
   try {
-    const { quote_request_id, cleaner_id, assigned_by, payment_amount } = await request.json()
+    const { quote_request_id, cleaner_id, payment_amount, admin_notes } = await request.json()
 
     // Check if already assigned
     const existingAssignment = (await query(
-      "SELECT id FROM cleaner_assignments WHERE quote_request_id = ? AND status IN ('pending', 'accepted')",
+      "SELECT id FROM cleaner_assignments WHERE quote_request_id = ? AND status IN ('pending', 'accepted', 'in_progress')",
       [quote_request_id]
     )) as any[]
 
@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     // Create assignment
     const result = (await query(
       `INSERT INTO cleaner_assignments 
-       (quote_request_id, cleaner_id, assigned_by, payment_amount, status) 
+       (quote_request_id, cleaner_id, payment_amount, admin_notes, status) 
        VALUES (?, ?, ?, ?, 'pending')`,
-      [quote_request_id, cleaner_id, assigned_by, payment_amount]
+      [quote_request_id, cleaner_id, payment_amount, admin_notes || null]
     )) as any
 
     // Get cleaner and quote details for notification
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       `SELECT 
          c.id as cleaner_id, u.email as cleaner_email, u.name as cleaner_name,
          qr.id as quote_id, qr.total_price, cust.name as customer_name,
-         b.scheduled_date
+         b.scheduled_date, qr.cleaning_type, qr.property_type
        FROM cleaner_assignments ca
        JOIN cleaners c ON ca.cleaner_id = c.id
        JOIN users u ON c.user_id = u.id
@@ -47,18 +47,20 @@ export async function POST(request: NextRequest) {
       const details = assignmentDetails[0]
       
       // Send assignment notification to cleaner
-      try {
-        await emailService.sendCleanerAssignmentNotification(
-          details.cleaner_email,
-          details.cleaner_name,
-          details.quote_id,
-          details.customer_name,
-          details.scheduled_date,
-          details.total_price
-        )
-      } catch (emailError) {
-        console.error("Failed to send assignment email:", emailError)
-      }
+      // try {
+      //   await emailService.sendCleanerAssignmentNotification(
+      //     details.cleaner_email,
+      //     details.cleaner_name,
+      //     details.quote_id,
+      //     details.customer_name,
+      //     details.scheduled_date,
+      //     details.payment_amount || payment_amount,
+      //     details.cleaning_type,
+      //     details.property_type
+      //   )
+      // } catch (emailError) {
+      //   console.error("Failed to send assignment email:", emailError)
+      // }
     }
 
     return NextResponse.json({ 
@@ -92,6 +94,8 @@ export async function GET(request: NextRequest) {
         u.name as cleaner_name,
         u.email as cleaner_email,
         qr.id as quote_id,
+        qr.cleaning_type,
+        qr.property_type,
         qr.total_price,
         cust.name as customer_name,
         cust.email as customer_email,
