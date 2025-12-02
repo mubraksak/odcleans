@@ -19,6 +19,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if job already completed
+    const completedAssignments = (await query(
+      "SELECT id FROM cleaner_assignments WHERE quote_request_id = ? AND status = 'completed'",
+      [quote_request_id]
+    )) as any[]
+
+    if (completedAssignments.length > 0) {
+      return NextResponse.json(
+        { error: "This job has already been completed" },
+        { status: 400 }
+      )
+    }
+
     // Create assignment
     const result = (await query(
       `INSERT INTO cleaner_assignments 

@@ -1,13 +1,94 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
 import { cn } from "@/lib/utils"
 
-const navigation = [
+// const navigation = [
+//   {
+//     name: "Dashboard",
+//     href: "/admin",
+//     icon: "📊",
+//   },
+//   {
+//     name: "Quotes",
+//     href: "/admin/quotes",
+//     icon: "📋",
+//   },
+//   {
+//     name: "Clients",
+//     href: "/admin/clients",
+//     icon: "👥",
+//   },
+//   {
+//     name: "Schedule",
+//     href: "/admin/schedule",
+//     icon: "📅",
+//   },
+  
+//   // Add this to your navigation items
+//   {
+//     name: "Transactions",
+//     href: "/admin/transactions",
+//     icon: "💳",
+//   },
+//   {
+//       href: "/admin/cleaner",
+//       name: "Cleaners",
+//       icon: "👥"
+//     },
+//     {
+//       href: "/admin/assignments", 
+//       name: "Assignments",
+//       icon: "📋"
+//     },
+//     {
+//       name: "Service-managemet",
+//       href: "/admin/service-management",
+//       icon: "⚙️",
+//     },
+//     {
+//       name: "Aditional Services",
+//       href: "/admin/aditional-services",
+//       icon: "🧼",
+//     },
+//     {
+//       name: "CMS",
+//       href: "/admin/cms",
+//       icon: "✏️",
+//     },
+//   ]
+
+export function AdminSidebar() {
+  const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isScrollable, setIsScrollable] = useState(false)
+  // const isScrollable = navigation.length * 48 > window.innerHeight - 200 // Approximate item height and header/footer space
+
+
+
+   useEffect(() => {
+    const checkScrollable = () => {
+      if (typeof window !== 'undefined') {
+        const navigationLength = navigation.length
+        const itemHeight = 48 // Approximate height per item
+        const availableHeight = window.innerHeight - 200 // Account for header/footer
+        setIsScrollable(navigationLength * itemHeight > availableHeight)
+      }
+    }
+
+    checkScrollable()
+
+
+    // Add resize listener
+    window.addEventListener('resize', checkScrollable)
+    return () => window.removeEventListener('resize', checkScrollable)
+  }, [])
+
+  const navigation = [
   {
     name: "Dashboard",
     href: "/admin",
@@ -61,11 +142,6 @@ const navigation = [
       icon: "✏️",
     },
   ]
-
-export function AdminSidebar() {
-  const pathname = usePathname()
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const isScrollable = navigation.length * 48 > window.innerHeight - 200 // Approximate item height and header/footer space
 
   return (
     <div className={cn("bg-primary text-primary-foreground transition-all duration-300", isCollapsed ? "w-16" : "w-64", isScrollable ? "overflow-y-auto" : "overflow-y-hidden")}>

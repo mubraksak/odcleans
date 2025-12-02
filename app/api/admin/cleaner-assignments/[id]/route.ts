@@ -7,9 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    //  Get assignment ID from params
     const { id } = await params
     const assignmentId = parseInt(id)
 
+    // Fetch assignment details with joins
     const assignmentQuery = `
       SELECT 
         ca.*,
@@ -71,29 +73,47 @@ export async function PATCH(
         updateFields.push("accepted_at = CURRENT_TIMESTAMP")
       } else if (status === "completed") {
         updateFields.push("completed_at = CURRENT_TIMESTAMP")
+
+        query(
+          `UPDATE bookings b
+           JOIN cleaner_assignments ca ON b.quote_request_id = ca.quote_request_id
+           SET b.status = 'completed'
+           WHERE ca.id = ?`,
+          [assignmentId]
+        )
+
+        query(
+          `UPDATE quote_requests qr
+           JOIN cleaner_assignments ca ON qr.id = ca.quote_request_id
+           SET qr.status = 'completed'
+           WHERE ca.id = ?`,
+          [assignmentId]
+        )
       }
     }
     
+    // Update other fields
     if (admin_notes !== undefined) {
       updateFields.push("admin_notes = ?")
       updateParams.push(admin_notes)
     }
     
+    // Update other fields
     if (cleaner_notes !== undefined) {
       updateFields.push("cleaner_notes = ?")
       updateParams.push(cleaner_notes)
     }
-    
+    // Update payment details
     if (payment_amount !== undefined) {
       updateFields.push("payment_amount = ?")
       updateParams.push(payment_amount)
     }
-    
+    // Update payment status and date
     if (payment_status !== undefined) {
       updateFields.push("payment_status = ?")
       updateParams.push(payment_status)
     }
-    
+    // Update payment status and date
     if (payment_date !== undefined) {
       updateFields.push("payment_date = ?")
       updateParams.push(payment_date)
