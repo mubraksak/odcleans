@@ -49,6 +49,10 @@ export function CleanerHeader({ cleanerData }: CleanerHeaderProps) {
             >
               Receipts
             </a>
+
+            <a href="/cleaner/profile" className="text-sm font-medium hover:text-accent">
+              Profile
+            </a>
             <form action="/api/cleaner/logout" method="POST">
               <button 
                 type="submit" 

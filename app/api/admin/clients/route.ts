@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const params: any[] = []
 
     if (search) {
-      whereClause = "WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?"
+      whereClause = "WHERE u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? "
       params.push(`%${search}%`, `%${search}%`, `%${search}%`)
     }
 
@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
              COUNT(CASE WHEN qr.status = 'scheduled' THEN 1 END) as accepted_quotes,
              SUM(CASE WHEN qr.status = 'scheduled' THEN qr.total_price ELSE 0 END) as total_spent,
              MAX(qr.created_at) as last_quote_date
-      FROM users u
+      FROM users u 
       LEFT JOIN quote_requests qr ON u.id = qr.user_id
-      ${whereClause}
+      ${whereClause} WHERE u.role = 'customer'
       GROUP BY u.id
-      ORDER BY u.created_at DESC
-      LIMIT ? OFFSET ?
+      ORDER BY u.created_at DESC 
+      LIMIT ? OFFSET ? 
     `
 
     params.push(limit, offset)

@@ -141,6 +141,12 @@ export function AdminSidebar() {
       href: "/admin/cms",
       icon: "✏️",
     },
+    { 
+    name: "Profile", 
+    href: "/admin/profile", 
+    icon: "👤" 
+    }
+
   ]
 
   return (

@@ -157,6 +157,10 @@ export function Header() {
                   </Link>
                 </Button>
 
+                <Link href="/dashboard/profile" className="text-sm font-medium hover:text-accent">
+                  Profile
+                </Link>
+
                  <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Link href="/quote">Get Quote</Link>
                 </Button>
@@ -229,6 +233,10 @@ export function Header() {
                     <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground justify-start">
                       <Link href="/quote" onClick={() => setIsMenuOpen(false)}>Get Quote</Link>
                     </Button>
+
+                    <Link href="/dashboard/profile" className="text-sm font-medium hover:text-accent">
+                      Profile
+                    </Link>
 
                     <Button 
                       variant="outline" 
