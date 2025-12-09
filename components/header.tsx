@@ -136,13 +136,13 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#services" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/#services" className="text-muted-foreground hover:text-primary transition-colors">
               Services
             </Link>
-            <Link href="#testimonials" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/#testimonials" className="text-muted-foreground hover:text-primary transition-colors">
               Reviews
             </Link>
-            <Link href="#contact" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/#contact" className="text-muted-foreground hover:text-primary transition-colors">
               Contact
             </Link>
           </nav>

@@ -197,6 +197,7 @@ export function QuotesTable() {
       console.error("Error updating quote:", error)
     }
   }
+  
 
   const handleSaveNotes = async () => {
     if (!selectedQuote) return

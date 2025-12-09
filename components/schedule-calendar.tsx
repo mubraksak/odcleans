@@ -114,7 +114,7 @@ export function ScheduleCalendar() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl text-primary">Cleaning Schedule</CardTitle>
-              <CardDescription>Manage and track all scheduled cleaning appointments</CardDescription>
+              <CardDescription>Manage and track all scheduled cleaning  appointments</CardDescription>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm">

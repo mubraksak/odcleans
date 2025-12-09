@@ -507,6 +507,85 @@ async sendBookingScheduledUser(email: string, userName: string, quoteId: number,
   })
 }
 
+// send review request email to user
+async sendReviewRequest(email: string, userName: string, quoteId: number, token: string) {
+  const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/review/${token}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 30px; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .highlight { background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .button { 
+          display: inline-block; 
+          background: #10b981; 
+          color: white; 
+          padding: 12px 24px; 
+          text-decoration: none; 
+          border-radius: 6px; 
+          font-weight: bold;
+          margin: 15px 0;
+        }
+        .rating-stars { color: #fbbf24; font-size: 18px; }
+        .note { background: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>How Was Your Cleaning Service?</h1>
+        </div>
+        <div class="content">
+          <p>Hello ${userName},</p>
+          <p>Thank you for choosing our cleaning service! We hope you were satisfied with the work done.</p>
+          <p>Your feedback is incredibly valuable to us. It helps us improve our services and recognize our hard-working cleaners.</p>
+          
+          <div class="highlight">
+            <h3 style="margin-top: 0;">Please Share Your Experience</h3>
+            <p>Click the button below to leave a review for your recent cleaning service:</p>
+            <div style="text-align: center;">
+              <a href="${reviewUrl}" class="button">Leave Your Review</a>
+            </div>
+            <p style="text-align: center; margin-top: 10px;">
+              <small>Or copy this link: <br/>${reviewUrl}</small>
+            </p>
+          </div>
+          
+          <div class="note">
+            <h4 style="margin-top: 0;">Why Your Review Matters</h4>
+            <ul>
+              <li>Helps us improve our services</li>
+              <li>Recognizes excellent work by our cleaners</li>
+              <li>Helps other customers make informed decisions</li>
+              <li>Only takes 2 minutes to complete</li>
+            </ul>
+          </div>
+          
+          <p>This review link will expire in 7 days.</p>
+          <p>Thank you for being a valued customer!</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} ${process.env.NEXT_PUBLIC_APP_NAME || 'Cleaning Service'}. All rights reserved.</p>
+          <p><small>If you didn't request this review, please ignore this email.</small></p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return this.sendEmail({
+    to: email,
+    subject: `Share Your Experience - Cleaning Service #${quoteId.toString().padStart(6, '0')}`,
+    html,
+  });
+}
+
 // Send booking scheduled notification to admin
 async sendBookingScheduledAdmin(quoteId: number, userName: string, userEmail: string, scheduledDate: string) {
   const formattedDate = new Date(scheduledDate).toLocaleDateString('en-US', {
@@ -633,6 +712,186 @@ async sendQuoteCreatedUser(quoteId: number, userName: string, userEmail: string,
     subject: `Your Cleaning Quote #${quoteId.toString().padStart(6, '0')} is Ready`,
     html,
   })
+}
+
+async sendBookingUpdateEmail(
+  email: string, 
+  userName: string, 
+  quoteId: number, 
+  scheduledDate: string, 
+  status: string,
+  reviewToken?: string
+) {
+  let statusMessage = '';
+  let reviewSection = '';
+  
+  // Customize message based on status
+  switch(status.toLowerCase()) {
+    case 'confirmed':
+      statusMessage = 'Your cleaning service has been confirmed!';
+      break;
+    case 'scheduled':
+      statusMessage = 'Your cleaning service has been scheduled.';
+      break;
+    case 'in_progress':
+      statusMessage = 'Your cleaning service is now in progress.';
+      break;
+    case 'completed':
+      statusMessage = 'Your cleaning service has been completed!';
+      // Add review link for completed status
+      if (reviewToken) {
+        const reviewUrl = `${process.env.APP_URL || 'http://localhost:3000'}/review/${reviewToken}`;
+        reviewSection = `
+          <div style="margin: 25px 0; padding: 20px; background: #d1fae5; border-radius: 8px; border-left: 4px solid #10b981;">
+            <h3 style="margin-top: 0; color: #065f46;">🌟 Share Your Experience</h3>
+            <p style="margin-bottom: 15px;">We'd love to hear about your experience with our service. Your feedback helps us improve!</p>
+            <a href="${reviewUrl}" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Leave a Review</a>
+            <p style="margin-top: 10px; font-size: 14px; color: #047857;">This link will expire in 7 days.</p>
+          </div>
+        `;
+      }
+      break;
+    case 'cancelled':
+      statusMessage = 'Your cleaning service has been cancelled.';
+      break;
+    default:
+      statusMessage = 'Your booking status has been updated.';
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9fafb; padding: 30px; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; } 
+        .highlight { background: #ffedd5; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+        .status-badge { 
+          display: inline-block; 
+          padding: 6px 12px; 
+          border-radius: 20px; 
+          font-weight: bold; 
+          font-size: 14px; 
+          text-transform: capitalize; 
+        }
+        .status-confirmed { background: #d1fae5; color: #065f46; }
+        .status-scheduled { background: #dbeafe; color: #1e40af; }
+        .status-in_progress { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #dcfce7; color: #166534; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Booking Status Update</h1>
+        </div>
+        <div class="content">
+          <p>Hello ${userName},</p>
+          <p>${statusMessage}</p>
+          
+          <div class="highlight">
+            <p><strong>Booking Details:</strong></p>
+            <p><strong>Quote ID:</strong> #${quoteId.toString().padStart(6, '0')}</p>
+            <p><strong>Current Status:</strong> 
+              <span class="status-badge status-${status.toLowerCase()}">${status.replace('_', ' ')}</span>
+            </p>
+            ${scheduledDate ? `<p><strong>Scheduled Date:</strong> ${scheduledDate}</p>` : ''}
+          </div>
+          
+          ${reviewSection}
+          
+          <p style="margin-top: 25px;">
+            <strong>Next Steps:</strong><br>
+            ${status.toLowerCase() === 'scheduled' ? 'Your cleaner will arrive at the scheduled time. Please ensure someone is available to provide access.' : ''}
+            ${status.toLowerCase() === 'in_progress' ? 'Your service is currently underway. We\'ll notify you when it\'s completed.' : ''}
+            ${status.toLowerCase() === 'completed' ? 'Your service has been completed. We hope you\'re satisfied with our work!' : ''}
+            ${status.toLowerCase() === 'cancelled' ? 'If you need to reschedule or have any questions, please contact our support team.' : ''}
+          </p>
+          
+          <p>If you have any questions or need further assistance, please don't hesitate to contact our support team.</p>
+          
+          <p>Best regards,<br>
+          The Cleaning Service Team</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Cleaning Service. All rights reserved.</p>   
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return this.sendEmail({
+    to: email,
+    subject: `Booking ${status.replace('_', ' ')} - Cleaning Service #${quoteId.toString().padStart(6, '0')}`,
+    html,
+  });
+}
+
+
+// Add a method for review requests
+async sendReviewRequest2(
+  email: string,
+  userName: string,
+  quoteId: number,
+  reviewToken: string
+) {
+  const reviewUrl = `${process.env.APP_URL || 'http://localhost:3000'}/review/${reviewToken}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #10b981; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9fafb; padding: 30px; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .review-box { margin: 25px 0; padding: 25px; background: #d1fae5; border-radius: 8px; text-align: center; }
+        .review-btn { display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; }
+        .stars { margin: 15px 0; font-size: 24px; color: #f59e0b; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>How Was Your Experience?</h1>
+        </div>
+        <div class="content">
+          <p>Hello ${userName},</p>
+          <p>Thank you for using our cleaning service! We hope you were satisfied with the work done on quote #${quoteId.toString().padStart(6, '0')}.</p>
+          
+          <div class="review-box">
+            <p style="font-size: 18px; margin-bottom: 20px;"><strong>Share your feedback with us!</strong></p>
+            <div class="stars">★★★★★</div>
+            <p style="margin-bottom: 20px;">Your review helps us improve our services and assists other customers in making their decisions.</p>
+            <a href="${reviewUrl}" class="review-btn">Leave a Review</a>
+            <p style="margin-top: 15px; font-size: 14px; color: #047857;">This link will expire in 7 days.</p>
+          </div>
+          
+          <p>If you have any questions or concerns, please don't hesitate to contact our support team.</p>
+          
+          <p>Best regards,<br>
+          The Cleaning Service Team</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} Cleaning Service. All rights reserved.</p>   
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return this.sendEmail({
+    to: email,
+    subject: `Review Your Cleaning Service - Quote #${quoteId.toString().padStart(6, '0')}`,
+    html,
+  });
 }
 
 

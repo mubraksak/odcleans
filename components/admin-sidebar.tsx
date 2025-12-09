@@ -127,6 +127,11 @@ export function AdminSidebar() {
       icon: "📋"
     },
     {
+      name: "Reviews",
+      href: "/admin/reviews",
+      icon: "⚙️",
+    },
+    {
       name: "Service-managemet",
       href: "/admin/service-management",
       icon: "⚙️",
