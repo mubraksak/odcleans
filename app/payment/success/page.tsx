@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default function PaymentSuccessPage() {
+// Create a separate component that uses useSearchParams
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [paymentStatus, setPaymentStatus] = useState<"loading" | "success" | "error">("loading")
@@ -73,34 +74,33 @@ export default function PaymentSuccessPage() {
         setIsUpdating(false)
       }
 
-
       try {
-          console.log("📧 Sending immediate payment emails...")
-          
-          // Send customer receipt
-          const emailResponse = await fetch('/api/send-payment-emails', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              quoteId: Number(quoteId),
-              customerEmail: customerEmail,
-              customerName: customerName,
-              amount: amount ? parseFloat(amount) : null,
-              paymentIntentId: payment_intent,
-              action: 'payment_success'
-            }),
-          })
+        console.log("📧 Sending immediate payment emails...")
+        
+        // Send customer receipt
+        const emailResponse = await fetch('/api/send-payment-emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            quoteId: Number(quoteId),
+            customerEmail: customerEmail,
+            customerName: customerName,
+            amount: amount ? parseFloat(amount) : null,
+            paymentIntentId: payment_intent,
+            action: 'payment_success'
+          }),
+        })
 
-          if (emailResponse.ok) {
-            console.log("✅ Immediate emails sent successfully")
-          } else {
-            console.error("❌ Failed to send immediate emails")
-          }
-        } catch (emailError) {
-          console.error("❌ Error sending immediate emails:", emailError)
+        if (emailResponse.ok) {
+          console.log("✅ Immediate emails sent successfully")
+        } else {
+          console.error("❌ Failed to send immediate emails")
         }
+      } catch (emailError) {
+        console.error("❌ Error sending immediate emails:", emailError)
+      }
     }
 
     // Only process if we have a quote ID
@@ -214,5 +214,29 @@ export default function PaymentSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Main page component wrapped in Suspense
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+            <CardTitle className="text-2xl">Loading Payment Details...</CardTitle>
+            <CardDescription>Please wait while we retrieve your payment information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">This will only take a moment...</p>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }

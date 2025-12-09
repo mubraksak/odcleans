@@ -1,7 +1,6 @@
-// app/cleaner/login/page.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export default function CleanerLoginPage() {
+// Create a separate component that uses useSearchParams
+function CleanerLoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -135,5 +135,32 @@ export default function CleanerLoginPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+// Main page component wrapped in Suspense
+export default function CleanerLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen py-12">
+        <div className="container mx-auto px-4 max-w-md">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Loading...</CardTitle>
+              <CardDescription>
+                Please wait while we load the login page
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-muted-foreground">Loading login form...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <CleanerLoginContent />
+    </Suspense>
   )
 }
